@@ -1,0 +1,76 @@
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.login {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  background-color: antiquewhite;
+  padding: 2em;
+  border-radius: 8px;
+  border: 1px solid black;
+  max-width: 500px;
+  width: 100%;
+}
+
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+
+label {
+  font-weight: bold;
+}
+
+input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px;
+}
+
+input :hover {
+  padding: 8px;
+  border: 0.5px;
+  border-color: black;
+}
+
+button {
+  padding: 10px;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  label,
+  input,
+  button,
+  a {
+    grid-column: span 12 !important;
+  }
+}
+
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card {
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  position: relative;
+}

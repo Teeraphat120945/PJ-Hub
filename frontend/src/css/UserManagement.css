@@ -1,0 +1,91 @@
+.user-management-page {
+  padding: 16px;
+}
+
+.user-management-page h2 {
+  margin-bottom: 12px;
+}
+
+.table-wrapper {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table th,
+.user-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.user-table th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.role {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.role.admin {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.role.teacher {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.role.student {
+  background: #ecfeff;
+  color: #0f766e;
+}
+
+.active {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.inactive {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #e5e7eb;
+}
+
+.btn.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.role-select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: white;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.role-select:focus {
+  outline: none;
+  border-color: #4f46e5;
+}

@@ -1,0 +1,218 @@
+.class-detail-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+
+  margin-top: 10px;
+  padding: 0 24px 48px;
+  box-sizing: border-box;
+
+}
+
+.class-card {
+
+  position: relative;
+  width: 100%;
+  max-width: 1500px;
+  padding: 36px 32px 16px;
+  min-height: 150px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border-top: 6px solid #3b82f6;
+}
+
+.class-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.class-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.class-card-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.edit-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #facc15;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background: #eab308;
+}
+
+.class-card-body {
+  margin-top: 24px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+
+}
+
+.class-description-row {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+
+.class-description-label {
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.class-description {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  margin: 0;
+  line-height: 1.6;
+  color: #444;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.assignment-section {
+  margin-top: -16px;
+  width: 100%;
+  max-width: 1500px;
+}
+
+.assignment-section h3 {
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.assignment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.assignment-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.assignment-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+
+  border-top: 6px solid #3b82f6 !important;
+  display: flex !important;
+  flex-direction: column !important;
+
+  padding: 24px !important;
+  min-height: 150px !important;
+
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+
+  cursor: pointer !important;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+.assignment-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.assignment-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.14);
+}
+
+.assignment-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.assignment-type {
+  display: inline-block;
+  font-size: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.assignment-date {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.assignment-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.view-detail {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2563eb;
+}
+
+.assignment-card:hover .view-detail {
+  text-decoration: underline;
+}
+
+.pagination {
+  margin-top: 32px;
+  display: flex;
+  gap: 8px;
+}
+
+.delete-assignment-btn {
+  background: transparent;
+  color: #ef4444;
+  border: none;
+
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 6px;
+  border-radius: 6px;
+
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.assignment-card:hover .delete-assignment-btn {
+  opacity: 1;
+}
+
+.delete-assignment-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.delete-assignment-btn:active {
+  transform: scale(0.95);
+}

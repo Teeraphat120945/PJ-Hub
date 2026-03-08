@@ -1,0 +1,288 @@
+.create-assignment-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 90vh;
+}
+
+.create-assignment-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 720px;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.create-assignment-card h2 {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.field label {
+  font-size: 0.9rem;
+  font-weight: 500;
+
+}
+
+.field input,
+.field textarea,
+.field select {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.field textarea {
+  height: auto;
+  min-height: 120px;
+  padding: 10px 12px;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px rgba(99,102,241,0.3);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+
+.grid-6 {
+  grid-column: span 6;
+}
+
+.file-list {
+  margin-top: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 6px 10px;
+  margin-bottom: 6px;
+
+  background: #f6f7f9;
+  border-radius: 6px;
+}
+
+.file-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.remove-file-btn {
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.remove-file-btn:hover {
+  color: #e53935;
+}
+
+.assignment-actions{
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.assignment-actions button {
+  all: unset;
+  box-sizing: border-box;
+
+  flex: 1;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancel-btn {
+    background: #e5e7eb !important;
+    color: #111827 !important;
+}
+
+.cancel-btn:hover {
+    background: #d1d5db !important;
+}
+
+.primary-btn {
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+}
+
+.primary-btn:hover {
+    background: #4338ca !important;
+}
+
+.clear-file-btn {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #ef4444;
+  background: #ffffff;
+  color: #ef4444;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.clear-file-btn:hover {
+  background: #fee2e2;
+}
+
+.file-upload {
+  height: 44px;
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+
+  font-size: 0.95rem;
+  color: #111827;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-start;
+}
+
+.file-upload:hover {
+  border-color: #6366f1;
+}
+
+.file-upload span {
+  text-align: left;
+  width: 100%;
+  display: block;
+  line-height: 44px;
+}
+
+.create-tag-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.create-tag-item-btn {
+  all: unset;
+  cursor: pointer;
+
+  height: 40px;
+  border-radius: 999px;
+
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all 0.2s ease;
+}
+
+.create-tag-item-btn:hover {
+  border-color: #4f46e5;
+}
+
+.create-tag-item-btn.active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+}
+
+.create-tag-item input {
+  display: none;
+}
+
+.create-tag-item-btn:focus,
+.create-tag-item-btn:focus-visible,
+.create-tag-item-btn:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.create-tag-item {
+  cursor: pointer;
+}
+
+.create-tag-item span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 44px;
+  width: 100%;
+
+  border-radius: 999px;
+  border: 1.5px solid #d1d5db;
+  background: #ffffff;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+
+  transition: all 0.25s ease;
+}
+
+.create-tag-item:hover span {
+  border-color: #4f46e5;
+}
+
+.create-tag-item input:checked + span {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+}
+
+.form-section {
+  margin-top: 28px;
+}
+
+.section-title {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}

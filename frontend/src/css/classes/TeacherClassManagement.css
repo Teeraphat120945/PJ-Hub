@@ -1,0 +1,117 @@
+.page-container {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  text-align: center;
+}
+
+.empty-text {
+  color: #777;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ===== list ===== */
+
+.assignment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== card ===== */
+
+.assignment-item {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.assignment-item:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+/* ===== info ===== */
+
+.assignment-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.assignment-class {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.assignment-name {
+  font-size: 14px;
+  color: #6b7280;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== actions ===== */
+
+.assignment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+/* ===== button ===== */
+
+.action-btn {
+  all: unset;
+  cursor: pointer;
+
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* primary action */
+.action-btn.view {
+  background: #eef2ff;
+  color: #3730a3;
+
+  white-space: nowrap;
+}
+
+.action-btn.view:hover {
+  background: #e0e7ff;
+  box-shadow: 0 2px 6px rgba(67, 56, 202, 0.25);
+}
