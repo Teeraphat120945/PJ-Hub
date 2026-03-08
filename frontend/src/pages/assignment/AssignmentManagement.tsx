@@ -77,7 +77,7 @@ function AssignmentManagement() {
                   className="action-btn view"
                   onClick={() => navigate(`/assignment/${a.assignment_id}`)}
                 >
-                  View detail →
+                  ดูผลงาน →
                 </button>
 
                 <button
@@ -86,7 +86,7 @@ function AssignmentManagement() {
                     navigate(`/edit-assignment/${a.assignment_id}/edit`)
                   }
                 >
-                  ✏️ Edit
+                  ✏️ แก้ไขผลงาน
                 </button>
 
                 <button
