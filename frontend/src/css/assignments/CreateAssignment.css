@@ -54,7 +54,7 @@
 .field textarea:focus,
 .field select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: #ae46f3;
   box-shadow: 0 0 0 1px rgba(99,102,241,0.3);
 }
 
@@ -143,7 +143,7 @@
 }
 
 .primary-btn:hover {
-    background: #4338ca !important;
+    background: #ae46f3 !important;
 }
 
 .clear-file-btn {
@@ -181,7 +181,7 @@
 }
 
 .file-upload:hover {
-  border-color: #6366f1;
+  border-color: #ae46f3;
 }
 
 .file-upload span {
@@ -220,12 +220,12 @@
 }
 
 .create-tag-item-btn:hover {
-  border-color: #4f46e5;
+  border-color: #ae46f3;
 }
 
 .create-tag-item-btn.active {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: #ae46f3;
+  border-color: #ae46f3;
   color: #ffffff;
 }
 
@@ -264,12 +264,12 @@
 }
 
 .create-tag-item:hover span {
-  border-color: #4f46e5;
+  border-color: #ae46f3;
 }
 
 .create-tag-item input:checked + span {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: #ae46f3;
+  border-color: #ae46f3;
   color: #ffffff;
   font-weight: 600;
   box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);

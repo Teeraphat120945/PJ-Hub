@@ -6,17 +6,30 @@
 .sidebar {
   position: fixed;
   left: 0;
-  height: 100vh;
+
   width: 220px;
+
+  top: 10px;
+  bottom: 10px;
+
   padding: 20px;
-  background: #f3f4f6;
+
+  background: linear-gradient(
+    180deg,
+    #c084fc 0%,
+    #a855f7 100%
+  );
 
   z-index: 1000;
+
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+
+  overflow-y: auto;
 
   transform: translateX(-100%);
   transition: transform 0.3s ease;
 }
-
 .sidebar.open {
   transform: translateX(0);
 }
@@ -110,7 +123,7 @@
 }
 
 .sidebar-menu li {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .sidebar-link {
@@ -120,11 +133,22 @@
   padding: 0 16px;
 
   text-decoration: none;
-  color: #111;
 
-  border-bottom: 1px solid #ddd;
+  /* สี text ปกติ */
+  color: white;
+
+  /* เอาเส้นออก */
+  border-bottom: none;
+
+  /* เพิ่ม radius */
+  border-radius: 12px;
+
+  transition: all 0.25s ease;
 }
 
 .sidebar-link:hover {
-  background: #f3f4f6;
+  background: white;
+  color: black;
+
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }

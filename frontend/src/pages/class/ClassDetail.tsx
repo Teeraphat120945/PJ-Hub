@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchClassDetail, type Class } from "../../services/class.service";
+import { fetchClassDetail, formatViewCount, type Class } from "../../services/class.service";
 import {
   getAssignmentByClass,
   deleteAssignment,
@@ -14,6 +14,7 @@ type AssignmentCard = {
   assignment_type: string;
   created_datetime: string;
   created_by: string;
+  view_cnt: number;
 };
 
 const ITEMS_PER_PAGE = 9;
@@ -70,6 +71,7 @@ const ClassDetail = () => {
     startIndex + ITEMS_PER_PAGE,
   );
   
+
   return (
     <div className="class-detail-container">
       <div className="class-card">
@@ -148,6 +150,10 @@ const ClassDetail = () => {
                   </div>
 
                   <div className="assignment-footer">
+                    <span className="view-count">
+                      {formatViewCount(a.view_cnt)}
+                    </span>
+
                     <span className="view-detail">
                       View detail →
                     </span>

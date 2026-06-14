@@ -8,6 +8,8 @@ import classRoutes from "./routes/class.routes";
 import userRoutes from "./routes/user.routes";
 import classUser from "./routes/classUser.routes";
 import assignment from "./routes/assignment.routes";
+import comment from "./routes/comment.routes";
+
 const app = express();
 
 app.use(cors());
@@ -18,6 +20,7 @@ app.use("/api/class", classRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/class-user", classUser);
 app.use("/api/assignment", assignment);
+app.use("/api/comments", comment)
 
 app.get("/", (_req, res) => {
   res.send("API is running...");

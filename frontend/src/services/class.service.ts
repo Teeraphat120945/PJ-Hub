@@ -140,3 +140,14 @@ export const deleteClass = async (
     throw new Error("ลบรายวิชาไม่สำเร็จ");
   }
 };
+
+export const formatViewCount = (count: number): string => {
+  if (count < 1000) return `เข้าชม ${count} ครั้ง`;
+  if (count < 1_000_000) {
+    const k = count / 1000;
+    return `เข้าชม ${Number.isInteger(k) ? k : k.toFixed(1)}k ครั้ง`;
+  }
+
+  const m = count / 1_000_000;
+  return `เข้าชม ${Number.isInteger(m) ? m : m.toFixed(1)}M ครั้ง`;
+};

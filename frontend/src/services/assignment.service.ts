@@ -32,7 +32,7 @@ export type Assignment = {
   created_datetime: string;
   files: AssignmentFile[];
   assignment_link?: string;
-
+  view_cnt: number;
   newFiles?: File[];
 };
 

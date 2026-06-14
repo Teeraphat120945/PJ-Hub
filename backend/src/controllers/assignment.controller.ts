@@ -94,7 +94,7 @@ export const getAssignment = async (req: any, res: Response) => {
   try {
     const [rows]: any = await conn.query(
       `
-      SELECT * FROM class_assignments WHERE deleted_flg = 0 AND class_id = ? ORDER BY created_datetime DESC, updated_datetime DESC
+      SELECT * FROM class_assignments WHERE deleted_flg = 0 AND class_id = ? ORDER BY view_cnt DESC , created_datetime DESC 
       `,
       [classId],
     );
@@ -115,13 +115,22 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
   const conn = await db.getConnection();
   const { assignment_id } = req.params;
   try {
+
+    await conn.execute(
+      `UPDATE class_assignments 
+       SET view_cnt = view_cnt + 1 
+       WHERE assignment_id = ?`,
+      [assignment_id]
+    );
+
+
     const [rows]: any = await conn.query(
       `
         SELECT assign.assignment_id, assign.assignment_name, assign.assignment_type, assign.assignment_detail, assign.class_id, assign.assignment_link,
-        assign.created_by, assign.created_datetime, files.file_id, files.file_name, files.file_path AS file_url
+        assign.view_cnt ,assign.created_by, assign.created_datetime, files.file_id, files.file_name, files.file_path AS file_url
         FROM class_assignments assign
         LEFT JOIN assignment_files files ON files.assignment_id = assign.assignment_id AND files.deleted_flg = 0
-        WHERE assign.deleted_flg = 0 AND assign.assignment_id = ?;
+        WHERE assign.deleted_flg = 0 AND assign.assignment_id = ? ;
       `,
       [assignment_id],
     );
@@ -137,6 +146,7 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
       assignment_detail: rows[0].assignment_detail,
       class_id: rows[0].class_id,
       assignment_link: rows[0].assignment_link,
+      view_cnt: rows[0].view_cnt,
       created_by: rows[0].created_by,
       files: [] as any[],
     };
