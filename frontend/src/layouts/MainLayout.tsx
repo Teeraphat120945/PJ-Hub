@@ -14,6 +14,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { getProfile } from "../services/auth.service";
+import universityLogo from "../assets/symbol_logo_up_1777530426.webp";
 import "../css/MainLayout.css";
 
 function MainLayout() {
@@ -57,7 +58,7 @@ function MainLayout() {
       />
       <aside className={`sidebar ${isSidebarOpen ? "open" : "closed"}`}>
       <div className="sidebar-header">
-        <div className="brand-mark"><FiBookOpen /></div>
+        <div className="brand-mark brand-mark-logo"><img src={universityLogo} alt="ตราสัญลักษณ์มหาวิทยาลัยพะเยา" /></div>
         <div className="brand-copy">
           <strong>PJ Hub</strong>
           <span>พื้นที่แบ่งปันผลงาน</span>
@@ -136,7 +137,7 @@ function MainLayout() {
             <button className="menu-trigger" aria-label="เปิดเมนู" aria-expanded={isSidebarOpen} onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
               <FiMenu />
             </button>
-            <div className="mobile-brand"><span className="brand-mark"><FiBookOpen /></span><strong>PJ Hub</strong></div>
+            <div className="mobile-brand"><span className="brand-mark brand-mark-logo"><img src={universityLogo} alt="" /></span><strong>PJ Hub</strong></div>
           </div>
         
           {!isLogin ? (

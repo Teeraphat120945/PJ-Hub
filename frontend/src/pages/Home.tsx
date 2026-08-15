@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiArrowRight, FiBookOpen, FiSearch, FiTrash2, FiX } from "react-icons/fi";
+import universityLogo from "../assets/symbol_logo_up_1777530426.webp";
 import {
   fetchClasses,
   deleteClass,
@@ -68,7 +69,7 @@ function Home() {
           <h1>ค้นพบรายวิชาและผลงาน</h1>
           <p>พื้นที่รวบรวมผลงาน แลกเปลี่ยนไอเดีย และติดตามโปรเจกต์ในแต่ละรายวิชา</p>
         </div>
-        <div className="hero-visual" aria-hidden="true"><FiBookOpen /></div>
+        <div className="hero-visual" aria-hidden="true"><span className="hero-orbit" /><img src={universityLogo} alt="" /></div>
       </div>
       <div className="home-search-wrapper">
         <div className="home-search-input-wrapper">

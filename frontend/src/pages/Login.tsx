@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
-import { FiArrowLeft, FiBookOpen, FiLock, FiUser } from "react-icons/fi";
+import { FiArrowLeft, FiLock, FiUser } from "react-icons/fi";
+import universityLogo from "../assets/symbol_logo_up_1777530426.webp";
 import "../css/Login.css";
 
 function Login() {
@@ -70,7 +71,7 @@ function Login() {
         <button className="back-btn" onClick={() => navigate("/")}>
           <FiArrowLeft /> กลับหน้าหลัก
         </button>
-        <div className="auth-brand"><span><FiBookOpen /></span><strong>PJ Hub</strong></div>
+        <div className="auth-brand"><span><img src={universityLogo} alt="ตราสัญลักษณ์มหาวิทยาลัยพะเยา" /></span><strong>PJ Hub</strong></div>
         <div className="auth-heading"><h1>ยินดีต้อนรับกลับมา</h1><p>เข้าสู่ระบบเพื่อจัดการรายวิชาและผลงานของคุณ</p></div>
 
         {error && <div className="error">{error}</div>}
