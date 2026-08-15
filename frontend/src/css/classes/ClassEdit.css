@@ -1,101 +1,145 @@
+/* Edit Class Page - UP Signature Theme */
+
 .edit-class-page {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 80vh;
+  min-height: calc(100vh - 120px);
+  padding: 24px 16px;
 }
 
 .edit-class-card {
   background: #ffffff;
   width: 100%;
-  max-width: 520px;
-  padding: 32px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-width: 580px;
+  padding: 36px 32px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(88, 44, 131, 0.1);
   position: relative;
 }
 
-.edit-class-card h2 {
-  text-align: center;
-  margin-bottom: 24px;
+.disabled-input {
+  background: #f1f5f9 !important;
+  color: var(--color-text-muted) !important;
+  cursor: not-allowed;
+  border-color: #cbd5e1 !important;
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .field label {
   font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.field input,
-.field textarea {
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  font-size: 0.95rem;
-  width: 95%;
-}
-
-.field textarea {
-  min-height: 100px;
-  resize: vertical;
-}
-
-.field input:focus,
-.field textarea:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3);
-}
-
-.field input:disabled {
-  background: #f3f4f6;
-  color: #6b7280;
-  cursor: not-allowed;
-}
-
-.edit-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.edit-actions button {
-  all: unset;
-  box-sizing: border-box;
-
-  flex: 1;
-  height: 48px;
-
+  font-weight: 600;
+  color: var(--color-text-main);
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+}
 
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 500;
+.field input {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: var(--transition-fast);
+  background: #f8fafc;
+}
+
+.field input:focus {
+  background: #ffffff;
+  border-color: var(--up-purple-medium);
+  box-shadow: 0 0 0 3.5px rgba(107, 35, 143, 0.15);
+}
+
+.textarea-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.textarea-wrapper textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  resize: vertical;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  background: #f8fafc;
+  transition: var(--transition-fast);
+}
+
+.textarea-wrapper textarea:focus {
+  background: #ffffff;
+  border-color: var(--up-purple-medium);
+  box-shadow: 0 0 0 3.5px rgba(107, 35, 143, 0.15);
+}
+
+.char-count {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.char-count.near-limit {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition-fast);
 }
 
 .cancel-btn {
-  background: #e5e7eb !important;
-  color: #111827 !important;
+  background: #f1f5f9;
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
 }
 
 .cancel-btn:hover {
-  background: #d1d5db !important;
+  background: #e2e8f0;
 }
 
 .primary-btn {
-  background: #4f46e5 !important;
-  color: #ffffff !important;
+  background: linear-gradient(135deg, var(--up-purple-primary), var(--up-purple-medium));
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(88, 44, 131, 0.25);
 }
 
-.primary-btn:hover {
-  background: #4338ca !important;
+.primary-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--up-purple-medium), var(--up-purple-light));
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(88, 44, 131, 0.35);
+}
+
+.primary-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }

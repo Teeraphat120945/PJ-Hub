@@ -31,7 +31,7 @@
 
 .login-required-card button {
   padding: 12px 24px;
-  background: #4f46e5;
+  background: linear-gradient(135deg, var(--up-purple-primary), var(--up-purple-medium));
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -39,9 +39,10 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(88, 44, 131, 0.25);
 }
 
 .login-required-card button:hover {
-  background: #4338ca;
+  background: linear-gradient(135deg, var(--up-purple-medium), var(--up-purple-light));
   transform: translateY(-1px);
 }

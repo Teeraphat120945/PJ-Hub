@@ -1,6 +1,18 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getProfile } from "../services/auth.service";
+import {
+  FiGrid,
+  FiPlusSquare,
+  FiFolder,
+  FiBookOpen,
+  FiUsers,
+  FiShield,
+  FiLogOut,
+  FiUser,
+  FiMenu,
+  FiX
+} from "react-icons/fi";
 import "../css/MainLayout.css";
 
 function MainLayout() {
@@ -8,7 +20,9 @@ function MainLayout() {
   const [username, setUsername] = useState<string | null>(null);
   const [role, setRole] = useState<number | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -19,99 +33,223 @@ function MainLayout() {
         setIsLogin(true);
         setUsername(data.user_name);
         setRole(data.role);
+        if (data.role !== undefined && data.role !== null) {
+          localStorage.setItem("role_flg", String(data.role));
+        }
       })
       .catch(() => {
         localStorage.removeItem("token");
+        localStorage.removeItem("role_flg");
         navigate("/login");
       });
-    }, [navigate]);
-  
-    const handleLogout = () => {
-      localStorage.removeItem("token");
-      setIsLogin(false);
-      setUsername(null);
-      navigate("/login");
-    };
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role_flg");
+    setIsLogin(false);
+    setUsername(null);
+    setRole(null);
+    navigate("/login");
+  };
+
+  const getRoleBadge = (roleNum: number | null) => {
+    switch (roleNum) {
+      case 0:
+        return { label: "ผู้ดูแลระบบ", className: "role-badge-admin" };
+      case 1:
+        return { label: "อาจารย์", className: "role-badge-teacher" };
+      case 2:
+        return { label: "นิสิต", className: "role-badge-student" };
+      default:
+        return { label: "ผู้ใช้งาน", className: "role-badge-guest" };
+    }
+  };
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div className="layout">
-      <aside className={`sidebar ${isSidebarOpen ? "open" : "closed"}`}>
-      <div className="sidebar-header">
-        
-        <button
-          className="sidebar-close"
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && (
+        <div
+          className="sidebar-overlay"
           onClick={() => setIsSidebarOpen(false)}
-        >
-          ☰
-        </button>
-
-        <h3 className="sidebar-title">เมนูผู้ใช้งาน</h3>
-      </div>
-      {(role !== null) && (
-      <ul className="sidebar-menu">
-        <li>
-          <Link className="sidebar-link" to="/" onClick={() => setIsSidebarOpen(false)}>• หน้าหลัก</Link>
-        </li>
-        {(role !== 3 ) && (
-        <>
-        <li>
-              <Link className="sidebar-link" to="/create-assignment" onClick={() => setIsSidebarOpen(false)}>
-                • เพิ่มผลงาน
-              </Link>
-          </li>
-          <li>
-              <Link className="sidebar-link" to="/assignments" onClick={() => setIsSidebarOpen(false)}>
-                • ผลงานของฉัน
-              </Link>
-          </li>
-        </>
-        )}
-        {(role === 0 || role === 1) && (
-          <>
-            <li>
-              <Link className="sidebar-link" to="/CreateClass" onClick={() => setIsSidebarOpen(false)}>
-                • เพิ่มรายวิชา
-              </Link>
-            </li> 
-
-            <li>
-              <Link className="sidebar-link" to="/TeacherClassManagement" onClick={() => setIsSidebarOpen(false)}>
-                • รายวิชาที่สอน
-              </Link>
-            </li>
-
-            <li>
-              <Link className="sidebar-link" to="/ClassUserManagement" onClick={() => setIsSidebarOpen(false)}>
-                • จัดการผู้ใช้ในรายวิชา
-              </Link>
-            </li>
-          </>
-        )}
-         {(role === 0) && (
-        <li>
-            <Link className="sidebar-link" to="/UserManagement" onClick={() => setIsSidebarOpen(false)}>
-              • จัดการผู้ใช้งาน
-            </Link>
-          </li>
-        )}
-
-         
-      </ul>
+        />
       )}
-    </aside>
 
+      {/* Sidebar */}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <div className="up-logo-badge">UP</div>
+            <div className="brand-text">
+              <span className="brand-title">มหาวิทยาลัยพะเยา</span>
+              <span className="brand-subtitle">Classroom Hub</span>
+            </div>
+          </div>
+
+          <button
+            className="sidebar-close"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <FiX size={20} />
+          </button>
+        </div>
+
+        <nav className="sidebar-nav">
+          <div className="sidebar-section-title">เมนูหลัก</div>
+          <ul className="sidebar-menu">
+            <li>
+              <Link
+                className={`sidebar-link ${isActive("/") ? "active" : ""}`}
+                to="/"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <FiGrid className="link-icon" />
+                <span>หน้าหลัก</span>
+              </Link>
+            </li>
+          </ul>
+
+          {role !== 3 && role !== null && (
+            <>
+              <div className="sidebar-section-title">สำหรับผู้ใช้งาน</div>
+              <ul className="sidebar-menu">
+                <li>
+                  <Link
+                    className={`sidebar-link ${isActive("/create-assignment") ? "active" : ""}`}
+                    to="/create-assignment"
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <FiPlusSquare className="link-icon" />
+                    <span>เพิ่มผลงาน</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className={`sidebar-link ${isActive("/assignments") ? "active" : ""}`}
+                    to="/assignments"
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <FiFolder className="link-icon" />
+                    <span>ผลงานของฉัน</span>
+                  </Link>
+                </li>
+              </ul>
+            </>
+          )}
+
+          {(role === 0 || role === 1) && (
+            <>
+              <div className="sidebar-section-title">จัดการการเรียนการสอน</div>
+              <ul className="sidebar-menu">
+                <li>
+                  <Link
+                    className={`sidebar-link ${isActive("/CreateClass") ? "active" : ""}`}
+                    to="/CreateClass"
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <FiPlusSquare className="link-icon" />
+                    <span>เพิ่มรายวิชา</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className={`sidebar-link ${isActive("/TeacherClassManagement") ? "active" : ""}`}
+                    to="/TeacherClassManagement"
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <FiBookOpen className="link-icon" />
+                    <span>รายวิชาที่สอน</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className={`sidebar-link ${isActive("/ClassUserManagement") ? "active" : ""}`}
+                    to="/ClassUserManagement"
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <FiUsers className="link-icon" />
+                    <span>จัดการนิสิตในวิชา</span>
+                  </Link>
+                </li>
+              </ul>
+            </>
+          )}
+
+          {role === 0 && (
+            <>
+              <div className="sidebar-section-title">ผู้ดูแลระบบ</div>
+              <ul className="sidebar-menu">
+                <li>
+                  <Link
+                    className={`sidebar-link ${isActive("/UserManagement") ? "active" : ""}`}
+                    to="/UserManagement"
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <FiShield className="link-icon" />
+                    <span>จัดการผู้ใช้งาน</span>
+                  </Link>
+                </li>
+              </ul>
+            </>
+          )}
+        </nav>
+
+        {isLogin && username && (
+          <div className="sidebar-footer">
+            <div className="sidebar-user-card">
+              <div className="user-avatar-circle">
+                {username.charAt(0).toUpperCase()}
+              </div>
+              <div className="user-details">
+                <span className="user-name-text">{username}</span>
+                <span className={`user-role-badge ${getRoleBadge(role).className}`}>
+                  {getRoleBadge(role).label}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </aside>
+
+      {/* Main Content Area */}
       <div className="main">
         <header className="header">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</button>
-        
-          {!isLogin ? (
-            <button onClick={() => navigate("/login")}>Login</button>
-          ) : (
+          <div className="header-left">
+            <button
+              className="toggle-sidebar-btn"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            >
+              <FiMenu size={22} />
+            </button>
+            <div className="header-brand-mobile">
+              <span className="up-header-icon">🏆</span>
+              <span>UP Classroom</span>
+            </div>
+          </div>
+
+          <div className="header-right">
+            {!isLogin ? (
+              <button className="btn-primary" onClick={() => navigate("/login")}>
+                เข้าสู่ระบบ
+              </button>
+            ) : (
               <div className="user-info">
-                <span>{username}</span>
-                <button onClick={handleLogout}>Logout</button>
+                <div className="header-user-badge">
+                  <FiUser className="user-icon" />
+                  <span className="username-text">{username}</span>
+                  <span className={`role-chip ${getRoleBadge(role).className}`}>
+                    {getRoleBadge(role).label}
+                  </span>
+                </div>
+                <button className="header-logout-btn" onClick={handleLogout}>
+                  <FiLogOut /> ออกจากระบบ
+                </button>
               </div>
-          )}
+            )}
+          </div>
         </header>
 
         <div className="content">
@@ -123,3 +261,4 @@ function MainLayout() {
 }
 
 export default MainLayout;
+

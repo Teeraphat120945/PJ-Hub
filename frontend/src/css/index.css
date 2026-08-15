@@ -1,116 +1,200 @@
+/* University of Phayao (UP) Design System & Global Styles */
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Brand Typography */
+  --font-primary: 'Prompt', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* University of Phayao Purple Brand Palette */
+  --up-purple-deep: #3b145a;     /* Deepest Phayao Violet */
+  --up-purple-dark: #4a1b6d;     /* Main Dark Purple */
+  --up-purple-primary: #582c83;  /* Official UP Phayao Purple */
+  --up-purple-medium: #6b238f;   /* Vibrant Medium Purple */
+  --up-purple-light: #7e22ce;    /* Bright Accent Purple */
+  --up-purple-bright: #9333ea;   /* Highlight Violet */
+  --up-purple-soft: #c084fc;     /* Soft Pastel Violet */
+  --up-purple-tint: #f3e8ff;     /* Background Tint */
+  --up-purple-bg: #f8f5fc;       /* App Workspace BG */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* UP Accent Gold / Amber */
+  --up-gold-primary: #f59e0b;
+  --up-gold-hover: #d97706;
+  --up-gold-light: #fef3c7;
+  --up-gold-text: #92400e;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  /* Neutral Tones */
+  --color-text-main: #1e1b2e;
+  --color-text-muted: #64748b;
+  --color-text-light: #94a3b8;
+  --color-bg-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
+
+  /* Semantic Feedback Colors */
+  --color-danger: #ef4444;
+  --color-danger-bg: #fef2f2;
+  --color-success: #10b981;
+  --color-success-bg: #ecfdf5;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 3px rgba(88, 44, 131, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(88, 44, 131, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(88, 44, 131, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 32px -8px rgba(88, 44, 131, 0.18);
+
+  /* Radius System */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: var(--font-primary);
+  background-color: var(--up-purple-bg);
+  color: var(--color-text-main);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c084fc;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9333ea;
+}
+
+/* Base Typography Defaults */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-top: 0;
+  line-height: 1.25;
 }
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  color: var(--up-purple-medium);
+  text-decoration: none;
+  transition: var(--transition-fast);
 }
+
 a:hover {
-  color: #535bf2;
+  color: var(--up-purple-light);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
+/* Global Button Base */
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.4em 1em;
-  font-size: 1em;
-  font-weight: 400;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: none;
+  outline: none;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  transition: var(--transition-fast);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button:active {
+  transform: translateY(1px);
 }
 
+/* Primary Button Styling */
+.btn-primary {
+  background: linear-gradient(135deg, var(--up-purple-primary), var(--up-purple-medium));
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(88, 44, 131, 0.25);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--up-purple-medium), var(--up-purple-light));
+  box-shadow: 0 6px 18px rgba(88, 44, 131, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Secondary / Secondary Accent */
+.btn-secondary {
+  background: var(--up-purple-tint);
+  color: var(--up-purple-primary);
+  font-weight: 600;
+}
+
+.btn-secondary:hover {
+  background: #e9d5ff;
+  color: var(--up-purple-dark);
+}
+
+/* Form Input Defaults */
+input, textarea, select {
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+  color: var(--color-text-main);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  transition: var(--transition-fast);
+  width: 100%;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--up-purple-medium);
+  box-shadow: 0 0 0 3.5px rgba(107, 35, 143, 0.15);
+}
+
+/* Form Grid Utilities */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 16px;
 }
 
-.grid-12 {
-  grid-column: span 12;
-}
+.grid-12 { grid-column: span 12; }
+.grid-11 { grid-column: span 11; }
+.grid-10 { grid-column: span 10; }
+.grid-9  { grid-column: span 9; }
+.grid-8  { grid-column: span 8; }
+.grid-7  { grid-column: span 7; }
+.grid-6  { grid-column: span 6; }
+.grid-5  { grid-column: span 5; }
+.grid-4  { grid-column: span 4; }
+.grid-3  { grid-column: span 3; }
+.grid-2  { grid-column: span 2; }
+.grid-1  { grid-column: span 1; }
 
-.grid-10 {
-  grid-column: span 11;
-}
-
-.grid-10 {
-  grid-column: span 10;
-}
-
-.grid-8 {
-  grid-column: span 10;
-}
-
-.grid-8 {
-  grid-column: span 8;
-}
-
-.grid-7 {
-  grid-column: span 7;
-}
-
-.grid-6 {
-  grid-column: span 6;
-}
-
-.grid-5 {
-  grid-column: span 5;
-}
-
-.grid-4 {
-  grid-column: span 4;
-}
-
-.grid-3 {
-  grid-column: span 3;
-}
-
-.grid-2 {
-  grid-column: span 2;
+@media (max-width: 768px) {
+  .grid-6, .grid-4, .grid-3, .grid-8, .grid-9, .grid-10 {
+    grid-column: span 12;
+  }
 }

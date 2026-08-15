@@ -1,24 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { FiPlusSquare, FiBookOpen, FiArrowLeft, FiCheck } from "react-icons/fi";
 import { createClass } from "../../services/class.service";
 import "../../css/classes/CreateClass.css";
-import "../../css/index.css";
 
 function CreateClass() {
   const [classId, setClassId] = useState("");
   const [className, setClassName] = useState("");
   const [describe, setDescribe] = useState("");
-  //const [types, setTypes] = useState<string[]>([]);
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const MAX_LENGTH = 500;
-
-
   const remaining: number = MAX_LENGTH - describe.length;
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +26,7 @@ function CreateClass() {
 
     try {
       setLoading(true);
-      await createClass(classId, className, describe);
+      await createClass(classId.trim(), className.trim(), describe.trim());
 
       toast.success(`สร้างรายวิชา ${className} สำเร็จ`);
       navigate("/");
@@ -48,54 +44,80 @@ function CreateClass() {
   return (
     <div className="create-class-page">
       <div className="create-class-card">
-        <h2>สร้างรายวิชาใหม่</h2>
+        <button
+          type="button"
+          className="back-btn"
+          onClick={() => navigate(-1)}
+        >
+          <FiArrowLeft /> กลับ
+        </button>
+
+        <div className="form-card-header">
+          <div className="form-icon-box">
+            <FiPlusSquare size={26} />
+          </div>
+          <h2>สร้างรายวิชาใหม่</h2>
+          <p className="form-subtitle">กรอกข้อมูลรายวิชาเพื่อเปิดพื้นที่การเรียนรู้ในระบบ</p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label htmlFor="class_id">รหัสวิชา</label>
+            <label htmlFor="class_id">
+              <FiBookOpen size={15} /> รหัสวิชา <span className="required-star">*</span>
+            </label>
             <input
               id="class_id"
               type="text"
-              placeholder="เช่น WEB101"
+              placeholder="เช่น CS101 หรือ WEB202"
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
+              required
             />
           </div>
 
           <div className="field">
-            <div className="form-section">
-              <label className="section-title" htmlFor="class_name">
-                ชื่อรายวิชา
-              </label>
-              <input
-                id="class_name"
-                type="text"
-                placeholder="เช่น Web Programming"
-                value={className}
-                onChange={(e) => setClassName(e.target.value)}
-              />
-            </div>
+            <label htmlFor="class_name">
+              ชื่อรายวิชา <span className="required-star">*</span>
+            </label>
+            <input
+              id="class_name"
+              type="text"
+              placeholder="เช่น Web Application Development"
+              value={className}
+              onChange={(e) => setClassName(e.target.value)}
+              required
+            />
           </div>
 
           <div className="field">
-            <div className="form-section">
-              <label className="section-title" >คำอธิบายรายวิชา</label>
-                <div className="textarea-wrapper">
-                <textarea
-                  maxLength={MAX_LENGTH}
-                  value={describe}
-                  onChange={(e) => setDescribe(e.target.value)}
-                />
-                <span className="char-count">
-                  {remaining}/{MAX_LENGTH}
-                </span>
-              </div>
+            <label htmlFor="class_describe">คำอธิบายรายวิชา</label>
+            <div className="textarea-wrapper">
+              <textarea
+                id="class_describe"
+                maxLength={MAX_LENGTH}
+                placeholder="ระบุรายละเอียด วัตถุประสงค์ หรือเนื้อหาของรายวิชาโดยย่อ..."
+                value={describe}
+                onChange={(e) => setDescribe(e.target.value)}
+              />
+              <span className={`char-count ${remaining < 50 ? "near-limit" : ""}`}>
+                เหลือ {remaining} / {MAX_LENGTH} ตัวอักษร
+              </span>
             </div>
           </div>
 
-          <button type="submit" className="primary-btn">
-            {loading ? "กำลังสร้างรายวิชา..." : "สร้างรายวิชา"}
-          </button>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="cancel-btn"
+              onClick={() => navigate("/")}
+            >
+              ยกเลิก
+            </button>
+            <button type="submit" className="primary-btn" disabled={loading}>
+              <FiCheck size={18} />
+              {loading ? "กำลังสร้างรายวิชา..." : "สร้างรายวิชา"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -103,3 +125,4 @@ function CreateClass() {
 }
 
 export default CreateClass;
+
