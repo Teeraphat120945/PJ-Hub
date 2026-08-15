@@ -99,7 +99,7 @@ const ClassDetail = () => {
       </div>
 
       <div className="assignment-section">
-        <h3>ผลงาน / Assignment</h3>
+        <h3>ผลงานในรายวิชา</h3>
 
         {currentAssignments.length === 0 ? (
           <p className="empty-text">ยังไม่มีผลงาน</p>
@@ -155,7 +155,7 @@ const ClassDetail = () => {
                     </span>
 
                     <span className="view-detail">
-                      View detail →
+                      ดูรายละเอียด →
                     </span>
                   </div>
                 </div>

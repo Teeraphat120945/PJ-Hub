@@ -1,5 +1,18 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import {
+  FiBookOpen,
+  FiFolder,
+  FiHome,
+  FiLogIn,
+  FiLogOut,
+  FiMenu,
+  FiPlusCircle,
+  FiUser,
+  FiUserCheck,
+  FiUsers,
+  FiX,
+} from "react-icons/fi";
 import { getProfile } from "../services/auth.service";
 import "../css/MainLayout.css";
 
@@ -35,81 +48,104 @@ function MainLayout() {
 
   return (
     <div className="layout">
+      <button
+        type="button"
+        className={`sidebar-backdrop ${isSidebarOpen ? "visible" : ""}`}
+        aria-label="ปิดเมนู"
+        tabIndex={isSidebarOpen ? 0 : -1}
+        onClick={() => setIsSidebarOpen(false)}
+      />
       <aside className={`sidebar ${isSidebarOpen ? "open" : "closed"}`}>
       <div className="sidebar-header">
-        
-        <button
-          className="sidebar-close"
-          onClick={() => setIsSidebarOpen(false)}
-        >
-          ☰
+        <div className="brand-mark"><FiBookOpen /></div>
+        <div className="brand-copy">
+          <strong>PJ Hub</strong>
+          <span>พื้นที่แบ่งปันผลงาน</span>
+        </div>
+        <button className="sidebar-close" aria-label="ปิดเมนู" onClick={() => setIsSidebarOpen(false)}>
+          <FiX />
         </button>
-
-        <h3 className="sidebar-title">เมนูผู้ใช้งาน</h3>
       </div>
-      {(role !== null) && (
       <ul className="sidebar-menu">
+        <li className="sidebar-section-label">ทั่วไป</li>
         <li>
-          <Link className="sidebar-link" to="/" onClick={() => setIsSidebarOpen(false)}>• หน้าหลัก</Link>
+          <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/" end onClick={() => setIsSidebarOpen(false)}>
+            <FiHome /><span>หน้าหลัก</span>
+          </NavLink>
         </li>
+        {(role !== null) && (
+        <>
         {(role !== 3 ) && (
         <>
+        <li className="sidebar-section-label">ผลงาน</li>
         <li>
-              <Link className="sidebar-link" to="/create-assignment" onClick={() => setIsSidebarOpen(false)}>
-                • เพิ่มผลงาน
-              </Link>
+              <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/create-assignment" onClick={() => setIsSidebarOpen(false)}>
+                <FiPlusCircle /><span>เพิ่มผลงาน</span>
+              </NavLink>
           </li>
           <li>
-              <Link className="sidebar-link" to="/assignments" onClick={() => setIsSidebarOpen(false)}>
-                • ผลงานของฉัน
-              </Link>
+              <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/assignments" onClick={() => setIsSidebarOpen(false)}>
+                <FiFolder /><span>ผลงานของฉัน</span>
+              </NavLink>
           </li>
         </>
         )}
         {(role === 0 || role === 1) && (
           <>
+            <li className="sidebar-section-label">รายวิชา</li>
             <li>
-              <Link className="sidebar-link" to="/CreateClass" onClick={() => setIsSidebarOpen(false)}>
-                • เพิ่มรายวิชา
-              </Link>
+              <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/CreateClass" onClick={() => setIsSidebarOpen(false)}>
+                <FiPlusCircle /><span>เพิ่มรายวิชา</span>
+              </NavLink>
             </li> 
 
             <li>
-              <Link className="sidebar-link" to="/TeacherClassManagement" onClick={() => setIsSidebarOpen(false)}>
-                • รายวิชาที่สอน
-              </Link>
+              <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/TeacherClassManagement" onClick={() => setIsSidebarOpen(false)}>
+                <FiBookOpen /><span>รายวิชาที่สอน</span>
+              </NavLink>
             </li>
 
             <li>
-              <Link className="sidebar-link" to="/ClassUserManagement" onClick={() => setIsSidebarOpen(false)}>
-                • จัดการผู้ใช้ในรายวิชา
-              </Link>
+              <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/ClassUserManagement" onClick={() => setIsSidebarOpen(false)}>
+                <FiUserCheck /><span>ผู้ใช้ในรายวิชา</span>
+              </NavLink>
             </li>
           </>
         )}
          {(role === 0) && (
+        <>
+        <li className="sidebar-section-label">ผู้ดูแลระบบ</li>
         <li>
-            <Link className="sidebar-link" to="/UserManagement" onClick={() => setIsSidebarOpen(false)}>
-              • จัดการผู้ใช้งาน
-            </Link>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/UserManagement" onClick={() => setIsSidebarOpen(false)}>
+              <FiUsers /><span>จัดการผู้ใช้งาน</span>
+            </NavLink>
           </li>
+        </>
         )}
-
-         
+        </>
+        )}
       </ul>
-      )}
+      <div className="sidebar-footer">
+        <span>Project Portfolio Hub</span>
+      </div>
     </aside>
 
       <div className="main">
         <header className="header">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</button>
+          <div className="header-leading">
+            <button className="menu-trigger" aria-label="เปิดเมนู" aria-expanded={isSidebarOpen} onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+              <FiMenu />
+            </button>
+            <div className="mobile-brand"><span className="brand-mark"><FiBookOpen /></span><strong>PJ Hub</strong></div>
+          </div>
         
           {!isLogin ? (
-            <button onClick={() => navigate("/login")}>Login</button>
+            <button className="header-auth-btn" onClick={() => navigate("/login")}><FiLogIn /> เข้าสู่ระบบ</button>
           ) : (
               <div className="user-info">
-                <span>{username}</span>
-                <button onClick={handleLogout}>Logout</button>
+                <span className="user-avatar"><FiUser /></span>
+                <div className="user-copy"><small>เข้าสู่ระบบเป็น</small><strong>{username}</strong></div>
+                <button className="logout-btn" aria-label="ออกจากระบบ" title="ออกจากระบบ" onClick={handleLogout}><FiLogOut /></button>
               </div>
           )}
         </header>

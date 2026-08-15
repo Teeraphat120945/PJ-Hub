@@ -19,7 +19,7 @@ import "react-toastify/dist/ReactToastify.css";
 function App() {
   return (
     <>
-      <ToastContainer position="top-right" autoClose={2000} />
+      <ToastContainer position="top-right" autoClose={2500} theme="light" pauseOnHover />
 
       <Routes>
         <Route path="/login" element={<Login />} />

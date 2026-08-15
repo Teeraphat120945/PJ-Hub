@@ -277,7 +277,7 @@ const AssignmentDetail = () => {
 
         <div className="comment-list">
           {comments.length === 0 ? (
-            <p className="no-comment">No comment</p>
+            <p className="no-comment">ยังไม่มีความคิดเห็น</p>
           ) : (
             comments.map((c) => (
               <div key={c.comment_id} className="comment-item">
@@ -361,7 +361,7 @@ const AssignmentDetail = () => {
           <div className="char-count">
             {newComment.length}/150
           </div>
-          <button onClick={handleAddComment}>บันทึก</button>
+          <button onClick={handleAddComment} disabled={!newComment.trim()}>บันทึก</button>
         </div>
       </div>
     </div>

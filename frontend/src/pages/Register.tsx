@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
+import { FiArrowLeft, FiBookOpen, FiLock, FiUser } from "react-icons/fi";
 import "../css/Login.css";
 
 function Register() {
@@ -43,51 +44,60 @@ function Register() {
     <div className="login-page">
       <div className="login-card">
         <button className="back-btn" onClick={() => navigate("/")}>
-          ← Home
+          <FiArrowLeft /> กลับหน้าหลัก
         </button>
-
-        <h2>Register</h2>
+        <div className="auth-brand"><span><FiBookOpen /></span><strong>PJ Hub</strong></div>
+        <div className="auth-heading"><h1>สร้างบัญชีใหม่</h1><p>เริ่มต้นรวบรวมและแบ่งปันผลงานของคุณ</p></div>
 
         {error && <div className="error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label className="section-title">ชื่อผู้ใช้</label>
+            <label className="section-title" htmlFor="register-username">ชื่อผู้ใช้</label>
+            <div className="input-with-icon"><FiUser />
             <input
+              id="register-username"
               type="text"
               value={username}
               onChange={(username) => setUsername(username.target.value)}
             />
+            </div>
           </div>
           <div className="field">
             <div className="form-section">
-              <label className="section-title">รหัสผ่าน</label>
+              <label className="section-title" htmlFor="register-password">รหัสผ่าน</label>
+              <div className="input-with-icon"><FiLock />
               <input
+                id="register-password"
                 type="password"
                 value={password}
                 onChange={(password) => setPassword(password.target.value)}
               />
+              </div>
             </div>
           </div>
 
           <div className="field">
             <div className="form-section">
-              <label className="section-title">ยืนยันรหัสผ่าน</label>
+              <label className="section-title" htmlFor="register-confirm-password">ยืนยันรหัสผ่าน</label>
+              <div className="input-with-icon"><FiLock />
               <input
+                id="register-confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(cf_password) =>
                   setConfirmPassword(cf_password.target.value)
                 }
               />
+              </div>
             </div>
           </div>
 
           <button className="login-primary-btn" type="submit">
-            Register
+            สร้างบัญชี
           </button>
 
           <div className="footer">
-            <Link to="/Login">Already have an account?</Link>
+            <span>มีบัญชีอยู่แล้ว?</span><Link to="/Login">เข้าสู่ระบบ</Link>
           </div>
         </form>
       </div>

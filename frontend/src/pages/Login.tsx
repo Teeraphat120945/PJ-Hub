@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
+import { FiArrowLeft, FiBookOpen, FiLock, FiUser } from "react-icons/fi";
 import "../css/Login.css";
 
 function Login() {
@@ -67,43 +68,49 @@ function Login() {
     <div className="login-page">
       <div className="login-card">
         <button className="back-btn" onClick={() => navigate("/")}>
-          ← กลับหน้าหลัก
+          <FiArrowLeft /> กลับหน้าหลัก
         </button>
-
-        <h2>เข้าสู่ระบบ</h2>
+        <div className="auth-brand"><span><FiBookOpen /></span><strong>PJ Hub</strong></div>
+        <div className="auth-heading"><h1>ยินดีต้อนรับกลับมา</h1><p>เข้าสู่ระบบเพื่อจัดการรายวิชาและผลงานของคุณ</p></div>
 
         {error && <div className="error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="field">
-              <label className="section-title">ชื่อผู้ใช้</label>
+              <label className="section-title" htmlFor="login-username">ชื่อผู้ใช้</label>
+              <div className="input-with-icon"><FiUser />
               <input
+                id="login-username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
               />
+              </div>
           </div>
 
           <div className="field">
             <div className="form-section">
-              <label className="section-title">รหัสผ่าน</label>
+              <label className="section-title" htmlFor="login-password">รหัสผ่าน</label>
+              <div className="input-with-icon"><FiLock />
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
               />
+              </div>
             </div>
           </div>
 
           <button className="login-primary-btn" type="submit" disabled={loading}>
-            {loading ? "กำลังเข้าสู่ระบบ..." : "Login"}
+            {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
           </button>
         </form>
 
         <div className="footer">
-          <Link to="/register">Create new account</Link>
+          <span>ยังไม่มีบัญชี?</span><Link to="/register">สร้างบัญชีใหม่</Link>
         </div>
       </div>
     </div>

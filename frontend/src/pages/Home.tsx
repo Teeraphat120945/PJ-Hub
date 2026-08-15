@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
+import { FiArrowRight, FiBookOpen, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import {
   fetchClasses,
   deleteClass,
@@ -61,11 +62,20 @@ function Home() {
   const currentClasses = classes.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   return (
     <div className="home-field">
+      <div className="home-hero">
+        <div>
+          <span className="eyebrow">PROJECT PORTFOLIO HUB</span>
+          <h1>ค้นพบรายวิชาและผลงาน</h1>
+          <p>พื้นที่รวบรวมผลงาน แลกเปลี่ยนไอเดีย และติดตามโปรเจกต์ในแต่ละรายวิชา</p>
+        </div>
+        <div className="hero-visual" aria-hidden="true"><FiBookOpen /></div>
+      </div>
       <div className="home-search-wrapper">
-        <span className="home-search-label">ค้นหา :</span>
-
         <div className="home-search-input-wrapper">
+          <FiSearch className="home-search-icon" aria-hidden="true" />
+          <label className="sr-only" htmlFor="home-search">ค้นหารายวิชา ผลงาน หรือแท็ก</label>
           <input
+            id="home-search"
             type="text"
             className="home-home-search"
             placeholder="ค้นหารายวิชา / ผลงาน / tag"
@@ -74,18 +84,26 @@ function Home() {
           />
 
           {search && (
-            <button className="home-clear-btn" onClick={() => setSearch("")}>
-              ✕
+            <button className="home-clear-btn" aria-label="ล้างคำค้นหา" onClick={() => setSearch("")}>
+              <FiX />
             </button>
           )}
         </div>
       </div>
 
       <div className="home-header">
-        <h2>รายวิชาทั้งหมด</h2>
+        <div><span className="eyebrow">EXPLORE</span><h2>รายวิชาทั้งหมด</h2></div>
+        <span className="result-count">{classes.length} รายวิชา</span>
       </div>
 
       <div className="home-class-grid">
+        {currentClasses.length === 0 && (
+          <div className="empty-state home-empty-state">
+            <span className="empty-state-icon"><FiSearch /></span>
+            <h3>{search ? "ไม่พบรายวิชาที่ตรงกับคำค้นหา" : "ยังไม่มีรายวิชา"}</h3>
+            <p>{search ? "ลองใช้ชื่อวิชา รหัสวิชา หรือคำค้นหาอื่น" : "รายวิชาที่เปิดเผยจะแสดงที่นี่"}</p>
+          </div>
+        )}
         {currentClasses.map((item) => {
           const canDeleteClass = role === 0 || role === 1;
 
@@ -93,35 +111,43 @@ function Home() {
             <div
               key={item.class_id}
               className="home-class-card"
+              role="link"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  navigate(`/class/${item.class_id}`);
+                }
+              }}
               onClick={() => {
                 setIsSidebarOpen(false);
                 navigate(`/class/${item.class_id}`);
               }}
             >
               <div className="home-class-card-header">
-                <h3>
-                  {item.class_id} : {item.class_name}
-                </h3>
+                <div className="course-heading"><span className="course-icon"><FiBookOpen /></span><div><span className="course-code">{item.class_id}</span><h3>{item.class_name}</h3></div></div>
 
                 {canDeleteClass && (
                   <button
                     className="home-delete-class-btn"
+                    aria-label={`ลบรายวิชา ${item.class_name}`}
+                    title="ลบรายวิชา"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteClass(item.class_id);
                     }}
                   >
-                    ลบ
+                    <FiTrash2 />
                   </button>
                 )}
               </div>
 
               <div className="home-class-card-content">
-                <p>รายละเอียด : {item.class_describe || "-"}</p>
+                <p>{item.class_describe || "ยังไม่มีคำอธิบายรายวิชา"}</p>
               </div>
 
               <div className="home-assignment-footer">
-                <span className="view-detail">View detail →</span>
+                <span className="view-detail">ดูรายละเอียด <FiArrowRight /></span>
               </div>
             </div>
           );
