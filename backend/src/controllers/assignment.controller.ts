@@ -24,27 +24,30 @@ export const createAssignment = async (req: any, res: Response) => {
       `,
       [class_id, work_type, title, detail, link, userId],
     );
-
+    
     const assignmentId = result.insertId;
+   
+   
+   
+    const values = files.map((file) => {
+      const originalName = Buffer.from(file.originalname,"latin1").toString("utf8").slice(0, 255);
+      return [
+      assignmentId,
+      originalName,
+      file.path,
+      file.size,
+    ];});
 
-    if (files && files.length > 0) {
-      const values = files.map((file) => [
-        assignmentId,
-        file.originalname,
-        file.path,
-        file.size,
-      ]);
-
-      await conn.query(
-        `
-            INSERT INTO assignment_files
-            (assignment_id, file_name, file_path, file_size)
-            VALUES ?
-            `,
-        [values],
-      );
-    }
-
+    await conn.query(
+      `
+          INSERT INTO assignment_files
+          (assignment_id, file_name, file_path, file_size)
+          VALUES ?
+          `,
+      [values],
+    );
+      
+    await conn.commit();
     res.json({ message: "สร้างผลงานสำเร็จ" });
   } catch (err) {
     console.error(err);
@@ -242,23 +245,24 @@ export const updateAssignment = async (req: Request, res: Response) => {
       );
     }
 
-    if (files && files.length > 0) {
-      const values = files.map((file) => [
-        assignmentId,
-        file.originalname,
-        file.path,
-        file.size,
-      ]);
-
-      await conn.query(
-        `
-        INSERT INTO assignment_files
-        (assignment_id, file_name, file_path, file_size)
-        VALUES ?
-        `,
-        [values],
-      );
-    }
+    const values = files.map((file) => {
+      const originalName = Buffer.from(file.originalname,"latin1").toString("utf8").slice(0, 255);
+      return [
+      assignmentId,
+      originalName,
+      file.path,
+      file.size,
+    ];});
+    
+    await conn.query(
+      `
+          INSERT INTO assignment_files
+          (assignment_id, file_name, file_path, file_size)
+          VALUES ?
+          `,
+      [values],
+    );
+      
 
     await conn.commit();
 
