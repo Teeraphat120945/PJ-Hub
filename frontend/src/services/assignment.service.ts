@@ -24,6 +24,7 @@ export type AssignmentFile = {
 
 export type Assignment = {
   class_id: string;
+  class_created_by?: string;
   assignment_id: number;
   assignment_name: string;
   assignment_type: string;
@@ -100,14 +101,24 @@ export const getAssignmentDetail = async (
   return json.data;
 };
 
-export const downloadAssignmentFile = async (fileId: number) => {
+export const downloadAssignmentFile = async (fileId: number, fileName?: string) => {
   const res = await fetch(`${API}/assignment/file/${fileId}`, {
     method: "GET",
     headers: authHeader(),
   });
 
   if (!res.ok) {
-    throw new Error("ดาวน์โหลดไฟล์ไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "ดาวน์โหลดไฟล์ไม่สำเร็จ");
+  }
+
+  let name = fileName || "download";
+  const disposition = res.headers.get("Content-Disposition");
+  if (disposition && disposition.includes("filename=")) {
+    const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (match && match[1]) {
+      name = decodeURIComponent(match[1].replace(/['"]/g, ""));
+    }
   }
 
   const blob = await res.blob();
@@ -115,7 +126,7 @@ export const downloadAssignmentFile = async (fileId: number) => {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "";
+  a.download = name;
   document.body.appendChild(a);
   a.click();
 

@@ -108,14 +108,12 @@ const ClassDetail = () => {
 
   return (
     <div className="class-detail-container">
-      {/* Top Breadcrumb / Back Button */}
       <div className="class-detail-nav">
         <button className="back-inline-btn" onClick={() => navigate("/")}>
           <FiArrowLeft /> กลับสู่หน้าหลัก
         </button>
       </div>
 
-      {/* Class Hero Header Card */}
       <div className="class-card">
         <div className="class-card-top-accent" />
         <div className="class-card-header">
@@ -151,7 +149,6 @@ const ClassDetail = () => {
         </div>
       </div>
 
-      {/* Assignment Section */}
       <div className="assignment-section">
         <div className="assignment-section-header">
           <div className="section-title-group">
@@ -230,7 +227,6 @@ const ClassDetail = () => {
         )}
       </div>
 
-      {/* Pagination Bar */}
       {totalPages > 1 && (
         <div className="home-pagination">
           <button

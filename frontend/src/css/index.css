@@ -1,4 +1,4 @@
-/* University of Phayao (UP) Design System & Global Styles */
+/* University of Phayao (UP) - Responsive Design System & Global Styles */
 
 :root {
   /* Brand Typography */
@@ -38,16 +38,25 @@
   --color-info: #3b82f6;
 
   /* Elevation Shadows */
-  --shadow-sm: 0 1px 3px rgba(88, 44, 131, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px -2px rgba(88, 44, 131, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 12px 24px -4px rgba(88, 44, 131, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 20px 32px -8px rgba(88, 44, 131, 0.18);
+  --shadow-sm: 0 1px 3px rgba(88, 44, 131, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 14px -2px rgba(88, 44, 131, 0.09), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(88, 44, 131, 0.14), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 36px -8px rgba(88, 44, 131, 0.2);
 
   /* Radius System */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
   --radius-full: 9999px;
+
+  /* Layering & Z-Index Standardization */
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-dropdown: 150;
+  --z-fixed: 500;
+  --z-modal-backdrop: 990;
+  --z-sidebar: 1000;
+  --z-toast: 9999;
 
   /* Transitions */
   --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -58,7 +67,12 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -68,12 +82,15 @@ html, body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -89,26 +106,34 @@ html, body {
   background: #9333ea;
 }
 
-/* Base Typography Defaults */
+/* Base Typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-primary);
   font-weight: 600;
   color: var(--color-text-main);
   margin-top: 0;
   line-height: 1.25;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 a {
   color: var(--up-purple-medium);
   text-decoration: none;
   transition: var(--transition-fast);
+  word-break: break-word;
 }
 
 a:hover {
   color: var(--up-purple-light);
 }
 
-/* Global Button Base */
+p, span, div, label {
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* Global Button Base with Touch Optimization */
 button {
   font-family: var(--font-primary);
   font-size: 0.95rem;
@@ -122,7 +147,11 @@ button {
   justify-content: center;
   gap: 8px;
   padding: 10px 18px;
+  min-height: 42px;
   transition: var(--transition-fast);
+  touch-action: manipulation;
+  user-select: none;
+  white-space: nowrap;
 }
 
 button:active {
@@ -142,7 +171,7 @@ button:active {
   transform: translateY(-1px);
 }
 
-/* Secondary / Secondary Accent */
+/* Secondary Button */
 .btn-secondary {
   background: var(--up-purple-tint);
   color: var(--up-purple-primary);
@@ -163,8 +192,10 @@ input, textarea, select {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 10px 14px;
+  min-height: 44px;
   transition: var(--transition-fast);
   width: 100%;
+  box-sizing: border-box;
 }
 
 input:focus, textarea:focus, select:focus {
@@ -173,11 +204,12 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3.5px rgba(107, 35, 143, 0.15);
 }
 
-/* Form Grid Utilities */
+/* Form Grid Utilities - Responsive System */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 16px;
+  width: 100%;
 }
 
 .grid-12 { grid-column: span 12; }
@@ -194,7 +226,8 @@ input:focus, textarea:focus, select:focus {
 .grid-1  { grid-column: span 1; }
 
 @media (max-width: 768px) {
-  .grid-6, .grid-4, .grid-3, .grid-8, .grid-9, .grid-10 {
-    grid-column: span 12;
+  .grid-11, .grid-10, .grid-9, .grid-8, .grid-7,
+  .grid-6, .grid-5, .grid-4, .grid-3, .grid-2 {
+    grid-column: span 12 !important;
   }
 }

@@ -7,6 +7,9 @@ import {
   FiTrash2,
   FiUser,
   FiCheckCircle,
+  FiShield,
+  FiUserCheck,
+  FiRotateCcw,
 } from "react-icons/fi";
 import {
   fetchClasses,
@@ -16,7 +19,7 @@ import {
   type Class,
   type ClassUser,
 } from "../../services/classUser.service";
-import { fetchAvailableUsers, type User } from "../../services/user.service";
+import { fetchAvailableUsers, updateUserRole, type User } from "../../services/user.service";
 import "../../css/classes/ClassUserManagement.css";
 
 const ROLE_TEXT: Record<number, { text: string; chipClass: string }> = {
@@ -33,6 +36,7 @@ function ClassUserManagement() {
   const [users, setUsers] = useState<ClassUser[]>([]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [autoPromote, setAutoPromote] = useState(true);
 
   const [loading, setLoading] = useState(false);
 
@@ -72,14 +76,47 @@ function ClassUserManagement() {
     };
   }, [selectedClassId]);
 
+  const handleUpdateRole = async (userId: string, newRole: number, userName: string) => {
+    const roleLabel = newRole === 2 ? "นิสิต" : "ผู้ใช้ทั่วไป";
+    if (
+      !window.confirm(
+        `คุณต้องการปรับระดับผู้ใช้ ${userName || userId} เป็น "${roleLabel}" ใช่หรือไม่?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await updateUserRole(userId, newRole);
+      setUsers((prev) =>
+        prev.map((u) => (u.user_id === userId ? { ...u, role_flg: newRole } : u))
+      );
+      toast.success(`ปรับระดับผู้ใช้เป็น "${roleLabel}" เรียบร้อยแล้ว`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "ปรับระดับผู้ใช้ไม่สำเร็จ");
+    }
+  };
+
   const handleAddUser = async () => {
     if (!selectedUserId) {
       toast.warning("กรุณาเลือกผู้ใช้");
       return;
     }
 
+    const targetUser = availableUsers.find((u) => u.user_id === selectedUserId);
+
     try {
       await addClassUser(selectedClassId, selectedUserId);
+
+      if (targetUser && targetUser.role_flg === 3 && autoPromote) {
+        try {
+          await updateUserRole(selectedUserId, 2);
+        } catch (roleErr) {
+          console.error("Auto promote error:", roleErr);
+        }
+      }
+
       toast.success("เพิ่มผู้ใช้เข้าสู่รายวิชาเรียบร้อย");
 
       const [classUsers, available] = await Promise.all([
@@ -185,7 +222,7 @@ function ClassUserManagement() {
 
                   {availableUsers.map((u) => (
                     <option key={u.user_id} value={u.user_id}>
-                      {u.user_name} ({u.user_id})
+                      {u.user_name} ({u.user_id}) {u.role_flg === 3 ? "— [ผู้ใช้ทั่วไป]" : "— [นิสิต]"}
                     </option>
                   ))}
                 </select>
@@ -199,6 +236,19 @@ function ClassUserManagement() {
                 <FiUserPlus size={16} /> เพิ่มเข้ารายวิชา
               </button>
             </div>
+
+            {availableUsers.find((u) => u.user_id === selectedUserId)?.role_flg === 3 && (
+              <div className="auto-promote-banner">
+                <label className="auto-promote-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={autoPromote}
+                    onChange={(e) => setAutoPromote(e.target.checked)}
+                  />
+                  <span>ปรับระดับจาก <strong>"ผู้ใช้ทั่วไป"</strong> เป็น <strong>"นิสิต"</strong> ทันทีเมื่อเพิ่มเข้ารายวิชา</span>
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="members-section">
@@ -240,18 +290,51 @@ function ClassUserManagement() {
                             </div>
                           </td>
                           <td>
-                            <span className={`member-role-chip ${roleMeta.chipClass}`}>
-                              {roleMeta.text}
-                            </span>
+                            <div className="member-role-cell">
+                              <span className={`member-role-chip ${roleMeta.chipClass}`}>
+                                {roleMeta.text}
+                              </span>
+
+                              {u.role_flg === 3 && (
+                                <button
+                                  type="button"
+                                  className="btn-promote-role"
+                                  onClick={() => handleUpdateRole(u.user_id, 2, u.user_name)}
+                                  title="ปรับระดับผู้ใช้จาก 'ผู้ใช้ทั่วไป' เป็น 'นิสิต'"
+                                >
+                                  <FiUserCheck size={13} /> ปรับเป็นนิสิต
+                                </button>
+                              )}
+
+                              {u.role_flg === 2 && (
+                                <button
+                                  type="button"
+                                  className="btn-demote-role"
+                                  onClick={() => handleUpdateRole(u.user_id, 3, u.user_name)}
+                                  title="ปรับระดับกลับเป็น 'ผู้ใช้ทั่วไป'"
+                                >
+                                  <FiRotateCcw size={11} /> ปรับเป็นทั่วไป
+                                </button>
+                              )}
+                            </div>
                           </td>
                           <td>
-                            <button
-                              className="btn-remove-member"
-                              onClick={() => handleRemoveUser(u.user_id, u.user_name)}
-                              title="ลบออกจากรายวิชา"
-                            >
-                              <FiTrash2 size={15} /> ลบออก
-                            </button>
+                            {u.role_flg === 0 ? (
+                              <span
+                                className="protected-admin-chip"
+                                title="ผู้ดูแลระบบ (ไม่สามารถลบออกจากรายวิชาได้)"
+                              >
+                                <FiShield size={13} /> ไม่สามารถลบได้
+                              </span>
+                            ) : (
+                              <button
+                                className="btn-remove-member"
+                                onClick={() => handleRemoveUser(u.user_id, u.user_name)}
+                                title="ลบออกจากรายวิชา"
+                              >
+                                <FiTrash2 size={15} /> ลบออก
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );

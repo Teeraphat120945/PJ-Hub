@@ -20,7 +20,9 @@ import "../css/Home.css";
 const ITEMS_PER_PAGE = 8;
 
 type LayoutContextType = {
-  setIsSidebarOpen: (open: boolean) => void;
+  setIsMobileOpen?: (open: boolean) => void;
+  setIsSidebarOpen?: (open: boolean) => void;
+  isCollapsed?: boolean;
 };
 
 function Home() {
@@ -28,7 +30,7 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
 
-  const { setIsSidebarOpen } = useOutletContext<LayoutContextType>();
+  const outletContext = useOutletContext<LayoutContextType>() || {};
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
@@ -70,7 +72,6 @@ function Home() {
 
   return (
     <div className="home-field">
-      {/* UP Hero Banner */}
       <div className="home-hero-banner">
         <div className="hero-content">
           <h1 className="hero-title">ระบบคลังรายวิชาและผลงานในการเรียนรู้</h1>
@@ -102,7 +103,6 @@ function Home() {
         </div>
       </div>
 
-      {/* Section Header */}
       <div className="home-section-header">
         <div className="section-title-group">
           <div className="section-icon-box">
@@ -117,7 +117,6 @@ function Home() {
         </div>
       </div>
 
-      {/* Class Cards Grid */}
       {classes.length === 0 ? (
         <div className="empty-classes-box">
           <FiBookOpen className="empty-icon" size={48} />
@@ -134,7 +133,8 @@ function Home() {
                 key={item.class_id}
                 className="home-class-card"
                 onClick={() => {
-                  setIsSidebarOpen(false);
+                  outletContext.setIsMobileOpen?.(false);
+                  outletContext.setIsSidebarOpen?.(false);
                   navigate(`/class/${item.class_id}`);
                 }}
               >
@@ -162,10 +162,12 @@ function Home() {
 
                 <div className="home-class-card-content">
                   <h3 className="class-card-title">{item.class_name}</h3>
-                  <p className="class-describe">
+                  <div className="class-describe-wrapper">
                     <FiInfo size={15} className="info-icon" />
-                    <span>{item.class_describe || item.class_name}</span>
-                  </p>
+                    <p className="class-describe">
+                      {item.class_describe || item.class_name}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="home-assignment-footer">
@@ -179,7 +181,6 @@ function Home() {
         </div>
       )}
 
-      {/* Pagination Bar */}
       {totalPages > 1 && (
         <div className="home-pagination">
           <button

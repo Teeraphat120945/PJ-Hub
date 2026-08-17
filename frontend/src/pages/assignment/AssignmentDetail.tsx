@@ -15,6 +15,7 @@ import {
   FiTrash2,
   FiX,
   FiCheck,
+  FiLock,
 } from "react-icons/fi";
 import {
   getAssignmentDetail,
@@ -46,6 +47,21 @@ const AssignmentDetail = () => {
   const token = localStorage.getItem("token");
   const currentUserId = localStorage.getItem("user_id");
   const role = localStorage.getItem("role") || localStorage.getItem("role_flg");
+  const userRole = role !== null && role !== undefined ? Number(role) : null;
+
+  const isWorkOwner = Boolean(
+    assignment && currentUserId && String(assignment.created_by) === String(currentUserId)
+  );
+
+  const isCourseInstructor = Boolean(
+    role === "0" ||
+    role === "1" ||
+    (assignment && currentUserId && String(assignment.class_created_by) === String(currentUserId))
+  );
+
+  const canComment = isWorkOwner || isCourseInstructor;
+  const isStudentOrStaff = userRole === 0 || userRole === 1 || userRole === 2;
+  const canAccessResources = isStudentOrStaff && (assignment ? (assignment as any).can_access_resources !== false : true);
 
   useEffect(() => {
     if (!assignment_id) return;
@@ -173,7 +189,6 @@ const AssignmentDetail = () => {
 
   return (
     <div className="assignment-detail-layout">
-      {/* LEFT COLUMN: Assignment Details */}
       <div className="assignment-detail-card">
         <div className="detail-page-header">
           <button className="back-inline-btn" onClick={() => navigate(-1)}>
@@ -217,7 +232,19 @@ const AssignmentDetail = () => {
           <div className="form-grid">
             <div className="field grid-6">
               <label className="sub-field-label">ไฟล์แนบ</label>
-              {assignment.files.length > 0 ? (
+              {!canAccessResources ? (
+                <div className="resource-locked-box">
+                  <div className="locked-icon-box">
+                    <FiLock size={16} />
+                  </div>
+                  <div className="locked-text-content">
+                    <span className="locked-title">การดาวน์โหลดไฟล์ถูกจำกัดสิทธิ์</span>
+                    <span className="locked-desc">
+                      สงวนสิทธิ์การดาวน์โหลดเฉพาะนิสิตในรายวิชาเท่านั้น (กรุณาให้อาจารย์ประจำวิชาปรับระดับเป็นนิสิต)
+                    </span>
+                  </div>
+                </div>
+              ) : assignment.files.length > 0 ? (
                 <ul className="file-list">
                   {assignment.files.map((file) => (
                     <li key={file.id} className="file-item">
@@ -225,7 +252,7 @@ const AssignmentDetail = () => {
                       <button
                         type="button"
                         className="file-link"
-                        onClick={() => downloadAssignmentFile(file.id!)}
+                        onClick={() => downloadAssignmentFile(file.id!, file.name)}
                         title="คลิกเพื่อดาวน์โหลดไฟล์"
                       >
                         {file.name}
@@ -241,7 +268,19 @@ const AssignmentDetail = () => {
 
             <div className="field grid-6">
               <label className="sub-field-label">ลิงก์ผลงานภายนอก</label>
-              {assignment.assignment_link ? (
+              {!canAccessResources ? (
+                <div className="resource-locked-box">
+                  <div className="locked-icon-box">
+                    <FiLock size={16} />
+                  </div>
+                  <div className="locked-text-content">
+                    <span className="locked-title">การเข้าถึงลิงก์ถูกจำกัดสิทธิ์</span>
+                    <span className="locked-desc">
+                      สงวนสิทธิ์การดูลิงก์ผลงานเฉพาะนิสิตและอาจารย์ในรายวิชาเท่านั้น
+                    </span>
+                  </div>
+                </div>
+              ) : assignment.assignment_link ? (
                 <a
                   href={assignment.assignment_link}
                   target="_blank"
@@ -258,7 +297,6 @@ const AssignmentDetail = () => {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Interactive Comments Stream */}
       <div className="comment-panel">
         <div className="comment-panel-header">
           <FiMessageSquare size={20} className="comment-icon-head" />
@@ -274,8 +312,10 @@ const AssignmentDetail = () => {
             </div>
           ) : (
             comments.map((c) => {
-              const canEditDelete =
-                role === "0" || String(c.user_id) === String(currentUserId);
+              const isCommentAuthor = String(c.user_id) === String(currentUserId);
+              const canEdit = isCommentAuthor || Number(role) === 0;
+              const canDelete = isCommentAuthor || isCourseInstructor || Number(role) === 0;
+              const hasMenu = canEdit || canDelete;
 
               return (
                 <div key={c.comment_id} className="comment-item">
@@ -292,26 +332,30 @@ const AssignmentDetail = () => {
                       </div>
                     </div>
 
-                    {canEditDelete && (
+                    {hasMenu && (
                       <div className="comment-menu">
                         <button className="gear-btn" title="ตัวเลือก">
                           <FiMoreVertical size={16} />
                         </button>
                         <div className="menu-dropdown">
-                          <button
-                            onClick={() => {
-                              setEditingId(c.comment_id);
-                              setEditText(c.comment_text);
-                            }}
-                          >
-                            <FiEdit size={13} /> แก้ไข
-                          </button>
-                          <button
-                            className="delete-btn"
-                            onClick={() => handleDeleteComment(c.comment_id)}
-                          >
-                            <FiTrash2 size={13} /> ลบ
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => {
+                                setEditingId(c.comment_id);
+                                setEditText(c.comment_text);
+                              }}
+                            >
+                              <FiEdit size={13} /> แก้ไข
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              className="delete-btn"
+                              onClick={() => handleDeleteComment(c.comment_id)}
+                            >
+                              <FiTrash2 size={13} /> ลบ
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
@@ -350,24 +394,42 @@ const AssignmentDetail = () => {
           )}
         </div>
 
-        <div className="comment-input-area">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            maxLength={150}
-            placeholder="พิมพ์ความคิดเห็นของคุณที่นี่..."
-          />
-          <div className="comment-input-footer">
-            <span className="char-count">{newComment.length} / 150 ตัวอักษร</span>
-            <button
-              className="btn-send-comment"
-              onClick={handleAddComment}
-              disabled={sendingComment || !newComment.trim()}
-            >
-              <FiSend size={15} /> {sendingComment ? "กำลังส่ง..." : "ส่งความคิดเห็น"}
-            </button>
+        {canComment ? (
+          <div className="comment-input-area">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              maxLength={150}
+              placeholder={
+                isCourseInstructor && !isWorkOwner
+                  ? "พิมพ์ข้อเสนอแนะหรือความคิดเห็นจากผู้สอน..."
+                  : "พิมพ์ความคิดเห็นหรือตอบกลับที่นี่..."
+              }
+            />
+            <div className="comment-input-footer">
+              <span className="char-count">{newComment.length} / 150 ตัวอักษร</span>
+              <button
+                className="btn-send-comment"
+                onClick={handleAddComment}
+                disabled={sendingComment || !newComment.trim()}
+              >
+                <FiSend size={15} /> {sendingComment ? "กำลังส่ง..." : "ส่งความคิดเห็น"}
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="comment-restricted-notice">
+            <div className="notice-icon-box">
+              <FiLock size={18} />
+            </div>
+            <div className="notice-content">
+              <p className="notice-title">การสนทนาเฉพาะผู้สอนและเจ้าของผลงาน</p>
+              <p className="notice-desc">
+                คุณสามารถอ่านความคิดเห็นและข้อเสนอแนะได้ แต่การส่งและตอบกลับความคิดเห็นสงวนสิทธิ์เฉพาะอาจารย์ผู้สอนประจำวิชาและเจ้าของผลงานเท่านั้น
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,11 @@ import { Request, Response } from "express";
 import { db } from "../db";
 
 export const getUsers = async (req: Request, res: Response) => {
+  const userRole = Number((req as any).user?.role);
+  if (userRole !== 0 && userRole !== 1) {
+    return res.status(403).json({ message: "ไม่มีสิทธิ์เข้าถึงข้อมูลผู้ใช้งาน" });
+  }
+
   const conn = await db.getConnection();
   try {
     const [rows]: any = await conn.execute(`
@@ -28,6 +33,7 @@ export const getUsers = async (req: Request, res: Response) => {
 };
 
 export const updateUserRole = async (req: Request, res: Response) => {
+  const currentRole = Number((req as any).user?.role);
   const { user_id } = req.params;
   const { role_flg } = req.body;
 
@@ -35,9 +41,37 @@ export const updateUserRole = async (req: Request, res: Response) => {
     return res.status(400).json({ message: "role_flg ไม่ถูกต้อง" });
   }
 
+  if (currentRole !== 0 && currentRole !== 1) {
+    return res.status(403).json({ message: "ไม่มีสิทธิ์แก้ไขระดับผู้ใช้" });
+  }
+
   let conn;
   try {
     conn = await db.getConnection();
+
+    if (currentRole === 1) {
+      if (role_flg !== 2 && role_flg !== 3) {
+        return res.status(403).json({
+          message: "อาจารย์สามารถปรับระดับผู้ใช้ได้เฉพาะ 'นิสิต' และ 'ผู้ใช้ทั่วไป' เท่านั้น",
+        });
+      }
+
+      const [target]: any = await conn.query(
+        `SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0`,
+        [user_id]
+      );
+
+      if (target.length === 0) {
+        return res.status(404).json({ message: "ไม่พบผู้ใช้ในระบบ" });
+      }
+
+      const targetRole = Number(target[0].role_flg);
+      if (targetRole === 0 || targetRole === 1) {
+        return res.status(403).json({
+          message: "อาจารย์ไม่สามารถปรับเปลี่ยนระดับของผู้ดูแลระบบหรืออาจารย์ท่านอื่นได้",
+        });
+      }
+    }
 
     await conn.execute(
       `
@@ -58,6 +92,11 @@ export const updateUserRole = async (req: Request, res: Response) => {
 };
 
 export const updateUserActive = async (req: Request, res: Response) => {
+  const userRole = (req as any).user?.role;
+  if (Number(userRole) !== 0) {
+    return res.status(403).json({ message: "สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น" });
+  }
+
   const { user_id } = req.params;
   const { active } = req.body;
 
@@ -99,6 +138,7 @@ export const getAvaliableUsers = async (req: Request, res: Response) => {
       WHERE cu.class_id = ?
         AND cu.deleted_flg = 0
     ) AND u.deleted_flg = 0
+      AND u.role_flg != 0
   `;
 
   const [users] = await db.query(sql, [classId]);
@@ -118,10 +158,11 @@ export const getRoles = async (req: any, res: any) => {
     `;
 
     const [rows] = await conn.query(sql);
-    console.log(rows)
     return res.json(rows);
   } catch (err) {
     console.error("GET ROLE ERROR:", err);
     return res.status(500).json({ message: "database error" });
+  } finally {
+    conn.release();
   }
 };

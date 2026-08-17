@@ -3,6 +3,7 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import { initDatabase } from "./db";
 import authRoutes from "./routes/auth.routes";
 import classRoutes from "./routes/class.routes";
 import userRoutes from "./routes/user.routes";
@@ -20,12 +21,14 @@ app.use("/api/class", classRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/class-user", classUser);
 app.use("/api/assignment", assignment);
-app.use("/api/comments", comment)
+app.use("/api/comments", comment);
 
 app.get("/", (_req, res) => {
   res.send("API is running...");
 });
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, async () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  await initDatabase();
+});

@@ -10,8 +10,9 @@ import {
   FiShield,
   FiLogOut,
   FiUser,
-  FiMenu,
-  FiX
+  FiX,
+  FiChevronLeft,
+  FiChevronRight
 } from "react-icons/fi";
 import "../css/MainLayout.css";
 
@@ -19,7 +20,12 @@ function MainLayout() {
   const [isLogin, setIsLogin] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [role, setRole] = useState<number | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem("sidebar_collapsed") === "true";
+  });
+  
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,6 +59,18 @@ function MainLayout() {
     navigate("/login");
   };
 
+  const toggleSidebar = () => {
+    if (window.innerWidth >= 1024) {
+      setIsCollapsed((prev) => {
+        const next = !prev;
+        localStorage.setItem("sidebar_collapsed", String(next));
+        return next;
+      });
+    } else {
+      setIsMobileOpen((prev) => !prev);
+    }
+  };
+
   const getRoleBadge = (roleNum: number | null) => {
     switch (roleNum) {
       case 0:
@@ -70,70 +88,78 @@ function MainLayout() {
 
   return (
     <div className="layout">
-      {/* Sidebar Overlay for Mobile */}
-      {isSidebarOpen && (
+      {isMobileOpen && (
         <div
           className="sidebar-overlay"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => setIsMobileOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
+      <aside className={`sidebar ${isMobileOpen ? "mobile-open" : ""} ${isCollapsed ? "collapsed" : ""}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <div className="up-logo-badge">UP</div>
-            <div className="brand-text">
-              <span className="brand-title">มหาวิทยาลัยพะเยา</span>
-              <span className="brand-subtitle">Classroom Hub</span>
-            </div>
+            <div className="up-logo-badge" title="มหาวิทยาลัยพะเยา">UP</div>
+            {!isCollapsed && (
+              <div className="brand-text">
+                <span className="brand-title">มหาวิทยาลัยพะเยา</span>
+                <span className="brand-subtitle">Classroom Hub</span>
+              </div>
+            )}
           </div>
 
           <button
             className="sidebar-close"
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={() => setIsMobileOpen(false)}
+            title="ปิดเมนู"
           >
             <FiX size={20} />
           </button>
         </div>
 
         <nav className="sidebar-nav">
-          <div className="sidebar-section-title">เมนูหลัก</div>
+          {!isCollapsed && <div className="sidebar-section-title">เมนูหลัก</div>}
           <ul className="sidebar-menu">
             <li>
               <Link
                 className={`sidebar-link ${isActive("/") ? "active" : ""}`}
                 to="/"
-                onClick={() => setIsSidebarOpen(false)}
+                onClick={() => setIsMobileOpen(false)}
+                title="หน้าหลัก"
               >
                 <FiGrid className="link-icon" />
-                <span>หน้าหลัก</span>
+                {!isCollapsed && <span>หน้าหลัก</span>}
               </Link>
             </li>
           </ul>
 
           {role !== 3 && role !== null && (
             <>
-              <div className="sidebar-section-title">สำหรับผู้ใช้งาน</div>
+              {!isCollapsed ? (
+                <div className="sidebar-section-title">สำหรับผู้ใช้งาน</div>
+              ) : (
+                <div className="sidebar-divider" />
+              )}
               <ul className="sidebar-menu">
                 <li>
                   <Link
                     className={`sidebar-link ${isActive("/create-assignment") ? "active" : ""}`}
                     to="/create-assignment"
-                    onClick={() => setIsSidebarOpen(false)}
+                    onClick={() => setIsMobileOpen(false)}
+                    title="เพิ่มผลงาน"
                   >
                     <FiPlusSquare className="link-icon" />
-                    <span>เพิ่มผลงาน</span>
+                    {!isCollapsed && <span>เพิ่มผลงาน</span>}
                   </Link>
                 </li>
                 <li>
                   <Link
                     className={`sidebar-link ${isActive("/assignments") ? "active" : ""}`}
                     to="/assignments"
-                    onClick={() => setIsSidebarOpen(false)}
+                    onClick={() => setIsMobileOpen(false)}
+                    title="ผลงานของฉัน"
                   >
                     <FiFolder className="link-icon" />
-                    <span>ผลงานของฉัน</span>
+                    {!isCollapsed && <span>ผลงานของฉัน</span>}
                   </Link>
                 </li>
               </ul>
@@ -142,36 +168,43 @@ function MainLayout() {
 
           {(role === 0 || role === 1) && (
             <>
-              <div className="sidebar-section-title">จัดการการเรียนการสอน</div>
+              {!isCollapsed ? (
+                <div className="sidebar-section-title">จัดการการเรียนการสอน</div>
+              ) : (
+                <div className="sidebar-divider" />
+              )}
               <ul className="sidebar-menu">
                 <li>
                   <Link
                     className={`sidebar-link ${isActive("/CreateClass") ? "active" : ""}`}
                     to="/CreateClass"
-                    onClick={() => setIsSidebarOpen(false)}
+                    onClick={() => setIsMobileOpen(false)}
+                    title="เพิ่มรายวิชา"
                   >
                     <FiPlusSquare className="link-icon" />
-                    <span>เพิ่มรายวิชา</span>
+                    {!isCollapsed && <span>เพิ่มรายวิชา</span>}
                   </Link>
                 </li>
                 <li>
                   <Link
                     className={`sidebar-link ${isActive("/TeacherClassManagement") ? "active" : ""}`}
                     to="/TeacherClassManagement"
-                    onClick={() => setIsSidebarOpen(false)}
+                    onClick={() => setIsMobileOpen(false)}
+                    title="รายวิชาที่สอน"
                   >
                     <FiBookOpen className="link-icon" />
-                    <span>รายวิชาที่สอน</span>
+                    {!isCollapsed && <span>รายวิชาที่สอน</span>}
                   </Link>
                 </li>
                 <li>
                   <Link
                     className={`sidebar-link ${isActive("/ClassUserManagement") ? "active" : ""}`}
                     to="/ClassUserManagement"
-                    onClick={() => setIsSidebarOpen(false)}
+                    onClick={() => setIsMobileOpen(false)}
+                    title="จัดการนิสิตในวิชา"
                   >
                     <FiUsers className="link-icon" />
-                    <span>จัดการนิสิตในวิชา</span>
+                    {!isCollapsed && <span>จัดการนิสิตในวิชา</span>}
                   </Link>
                 </li>
               </ul>
@@ -180,16 +213,21 @@ function MainLayout() {
 
           {role === 0 && (
             <>
-              <div className="sidebar-section-title">ผู้ดูแลระบบ</div>
+              {!isCollapsed ? (
+                <div className="sidebar-section-title">ผู้ดูแลระบบ</div>
+              ) : (
+                <div className="sidebar-divider" />
+              )}
               <ul className="sidebar-menu">
                 <li>
                   <Link
                     className={`sidebar-link ${isActive("/UserManagement") ? "active" : ""}`}
                     to="/UserManagement"
-                    onClick={() => setIsSidebarOpen(false)}
+                    onClick={() => setIsMobileOpen(false)}
+                    title="จัดการผู้ใช้งาน"
                   >
                     <FiShield className="link-icon" />
-                    <span>จัดการผู้ใช้งาน</span>
+                    {!isCollapsed && <span>จัดการผู้ใช้งาน</span>}
                   </Link>
                 </li>
               </ul>
@@ -199,30 +237,33 @@ function MainLayout() {
 
         {isLogin && username && (
           <div className="sidebar-footer">
-            <div className="sidebar-user-card">
+            <div className="sidebar-user-card" title={`${username} (${getRoleBadge(role).label})`}>
               <div className="user-avatar-circle">
                 {username.charAt(0).toUpperCase()}
               </div>
-              <div className="user-details">
-                <span className="user-name-text">{username}</span>
-                <span className={`user-role-badge ${getRoleBadge(role).className}`}>
-                  {getRoleBadge(role).label}
-                </span>
-              </div>
+              {!isCollapsed && (
+                <div className="user-details">
+                  <span className="user-name-text">{username}</span>
+                  <span className={`user-role-badge ${getRoleBadge(role).className}`}>
+                    {getRoleBadge(role).label}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
       </aside>
 
-      {/* Main Content Area */}
-      <div className="main">
+      <div className={`main ${isCollapsed ? "sidebar-collapsed" : ""}`}>
         <header className="header">
           <div className="header-left">
             <button
               className="toggle-sidebar-btn"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              onClick={toggleSidebar}
+              title={isCollapsed ? "ขยายเมนูด้านข้าง (Expand Sidebar)" : "ย่อเมนูด้านข้าง (Collapse Sidebar)"}
+              aria-label="Toggle Sidebar"
             >
-              <FiMenu size={22} />
+              {isCollapsed ? <FiChevronRight size={20} /> : <FiChevronLeft size={20} />}
             </button>
             <div className="header-brand-mobile">
               <span className="up-header-icon">🏆</span>
@@ -253,7 +294,7 @@ function MainLayout() {
         </header>
 
         <div className="content">
-          <Outlet context={{ setIsSidebarOpen }} />
+          <Outlet context={{ setIsMobileOpen, setIsSidebarOpen: setIsMobileOpen, isCollapsed }} />
         </div>
       </div>
     </div>
@@ -261,4 +302,3 @@ function MainLayout() {
 }
 
 export default MainLayout;
-

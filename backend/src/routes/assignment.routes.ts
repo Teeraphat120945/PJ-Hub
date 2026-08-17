@@ -14,6 +14,5 @@ router.get("/get-assignment/:classId", getAssignment);
 router.get("/get-detail/:assignment_id", authMiddleware, getAssignmentDetail);
 
 router.get("/assignment/file/:fileId", authMiddleware, downloadAssignmentFile);
-router.post
 
 export default router;

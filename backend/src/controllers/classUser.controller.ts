@@ -11,7 +11,7 @@ export const getClasses = async (req: Request, res: Response) => {
       `SELECT c.class_id, c.class_name
       FROM classes AS c
       LEFT OUTER JOIN class_users AS cu ON cu.class_id = c.class_id 
-      WHERE c.deleted_flg = 0 AND cu.user_id = ?
+      WHERE c.deleted_flg = 0 AND cu.deleted_flg = 0 AND cu.user_id = ?
       ORDER BY c.created_datetime DESC`,
       [userId]
     );
@@ -34,8 +34,8 @@ export const getClassUsers = async (req: Request, res: Response) => {
     FROM class_users AS cu
     LEFT JOIN users AS u ON cu.user_id = u.user_id
     LEFT JOIN ref_role as roles ON roles.role_id = u.role_flg
-    WHERE u.deleted_flg = 0 and cu.class_id = ?
-    GROUP BY  cu.user_id, u.user_name, cu.view_flg, u.role_flg, roles.role_name
+    WHERE u.deleted_flg = 0 AND cu.deleted_flg = 0 AND cu.class_id = ?
+    GROUP BY cu.user_id, u.user_name, cu.view_flg, u.role_flg, roles.role_name
     `,
     [classId]
     );
@@ -99,8 +99,19 @@ export const addClassUser = async (req: Request, res: Response) => {
 export const removeUser = async (req: Request, res: Response) => {
   const { classId, userId } = req.params;
   const conn = await db.getConnection();
-  const deletedBy = req.user.user_id;
+  const deletedBy = (req as any).user?.user_id || (req as any).user?.id;
   try {
+    const [targetUsers]: any = await conn.query(
+      `SELECT role_flg FROM users WHERE user_id = ?`,
+      [userId]
+    );
+
+    if (targetUsers.length > 0 && targetUsers[0].role_flg === 0) {
+      return res.status(403).json({
+        message: "ไม่สามารถลบผู้ดูแลระบบ (Admin) ออกจากรายวิชาได้",
+      });
+    }
+
     await conn.query(
       `
       UPDATE class_users
@@ -121,5 +132,6 @@ export const removeUser = async (req: Request, res: Response) => {
     conn.release();
   }
 };
+
 
 

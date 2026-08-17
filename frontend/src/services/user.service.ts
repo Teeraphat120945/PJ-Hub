@@ -54,7 +54,8 @@ export const updateUserRole = async (
   });
 
   if (!res.ok) {
-    throw new Error("เปลี่ยน role ไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "เปลี่ยนระดับสิทธิ์ไม่สำเร็จ");
   }
 };
 

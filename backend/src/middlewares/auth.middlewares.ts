@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 
+const JWT_SECRET = process.env.JWT_SECRET || "classroom_jwt_secret_key_2026";
+
 export const authMiddleware = (
   req: Request,
   res: Response,
@@ -17,7 +19,7 @@ export const authMiddleware = (
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
+      JWT_SECRET
     ) as Request["user"];
 
     req.user = decoded;
@@ -25,4 +27,4 @@ export const authMiddleware = (
   } catch {
     return res.status(401).json({ message: "Invalid token" });
   }
-};
+};

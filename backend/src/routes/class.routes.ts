@@ -13,5 +13,6 @@ router.get("/getclass/:classId", getClassesByCondition);
 
 router.put("/update/:classId", authMiddleware, updateClass);
 
-router.delete("/deleted/:classId", authMiddleware, deletedClass)
+router.delete("/delete/:classId", authMiddleware, deletedClass);
+router.delete("/deleted/:classId", authMiddleware, deletedClass);
 export default router;

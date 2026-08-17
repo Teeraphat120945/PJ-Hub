@@ -42,6 +42,8 @@ function UserManagement() {
     load();
   }, []);
 
+  const currentRole = Number(localStorage.getItem("role") || localStorage.getItem("role_flg"));
+
   const changeRole = async (user_id: string, role_flg: number) => {
     if (!window.confirm("ยืนยันการเปลี่ยนสิทธิ์ผู้ใช้?")) return;
 
@@ -53,8 +55,8 @@ function UserManagement() {
       );
 
       toast.success("เปลี่ยนสิทธิ์เรียบร้อย");
-    } catch {
-      toast.error("เปลี่ยนสิทธิ์ไม่สำเร็จ");
+    } catch (err: any) {
+      toast.error(err.message || "เปลี่ยนสิทธิ์ไม่สำเร็จ");
     }
   };
 
@@ -156,19 +158,27 @@ function UserManagement() {
                 </td>
 
                 <td>
-                  <select
-                    className={`role-select role-flg-${user.role_flg}`}
-                    value={user.role_flg}
-                    onChange={(e) =>
-                      changeRole(user.user_id, Number(e.target.value))
-                    }
-                  >
-                    {roles.map((role) => (
-                      <option key={role.role_id} value={role.role_id}>
-                        {role.role_name}
-                      </option>
-                    ))}
-                  </select>
+                  {currentRole === 1 && (user.role_flg === 0 || user.role_flg === 1) ? (
+                    <span className={`member-role-chip role-chip-${user.role_flg === 0 ? "admin" : "teacher"}`}>
+                      {user.role_name || (user.role_flg === 0 ? "ผู้ดูแลระบบ" : "อาจารย์")}
+                    </span>
+                  ) : (
+                    <select
+                      className={`role-select role-flg-${user.role_flg}`}
+                      value={user.role_flg}
+                      onChange={(e) =>
+                        changeRole(user.user_id, Number(e.target.value))
+                      }
+                    >
+                      {roles
+                        .filter((r) => currentRole === 0 || r.role_id === 2 || r.role_id === 3)
+                        .map((role) => (
+                          <option key={role.role_id} value={role.role_id}>
+                            {role.role_name}
+                          </option>
+                        ))}
+                    </select>
+                  )}
                 </td>
 
                 <td>
@@ -180,20 +190,26 @@ function UserManagement() {
                 </td>
 
                 <td>
-                  <button
-                    className={`btn-action-status ${user.deleted_flg === 0 ? "danger" : "success"}`}
-                    onClick={() => toggleActive(user)}
-                  >
-                    {user.deleted_flg === 0 ? (
-                      <>
-                        <FiUserX size={15} /> ปิดใช้งาน
-                      </>
-                    ) : (
-                      <>
-                        <FiUserCheck size={15} /> เปิดใช้งาน
-                      </>
-                    )}
-                  </button>
+                  {currentRole === 0 ? (
+                    <button
+                      className={`btn-action-status ${user.deleted_flg === 0 ? "danger" : "success"}`}
+                      onClick={() => toggleActive(user)}
+                    >
+                      {user.deleted_flg === 0 ? (
+                        <>
+                          <FiUserX size={15} /> ปิดใช้งาน
+                        </>
+                      ) : (
+                        <>
+                          <FiUserCheck size={15} /> เปิดใช้งาน
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+                      -
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

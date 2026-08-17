@@ -2,27 +2,38 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { db } from "../db";
 
+const JWT_SECRET = process.env.JWT_SECRET || "classroom_jwt_secret_key_2026";
+
 export const create = async (req: Request, res: Response) => {
   const { classId, className, describe } = req.body;
 
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(" ")[1];
-  const conn = await db.getConnection();
   if (!token) {
     return res.status(401).json({ message: "unauthorized" });
   }
 
-  const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-  const userId = decoded.user_id;
-  const role = decoded.role;
+  let userId: string;
+  let role: number;
+  try {
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    userId = decoded.user_id;
+    role = Number(decoded.role);
+  } catch {
+    return res.status(401).json({ message: "invalid token" });
+  }
+
+  if (role !== 0 && role !== 1) {
+    return res.status(403).json({ message: "สงวนสิทธิ์การสร้างรายวิชาเฉพาะอาจารย์และผู้ดูแลระบบเท่านั้น" });
+  }
+
+  const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
 
-    const result = await conn.execute(
-      `SELECT user_id FROM users WHERE role_flg = 0`,
+    const [admins]: any = await conn.execute(
+      `SELECT user_id FROM users WHERE role_flg = 0 AND deleted_flg = 0`,
     );
-
-    const admins = result[0] as { user_id: number }[];
 
     await conn.execute(
       `INSERT INTO classes
@@ -39,7 +50,7 @@ export const create = async (req: Request, res: Response) => {
     );
 
     for (const admin of admins) {
-      if (admin.user_id === userId) continue;
+      if (String(admin.user_id) === String(userId)) continue;
 
       await conn.execute(
         `INSERT INTO class_users
@@ -53,7 +64,7 @@ export const create = async (req: Request, res: Response) => {
     res.status(201).json({ message: "create class success" });
   } catch (err) {
     await conn.rollback();
-    console.error(err);
+    console.error("create class error:", err);
     res.status(500).json({ message: "create class failed" });
   } finally {
     conn.release();
@@ -66,13 +77,18 @@ export const view = async (req: Request, res: Response) => {
     const token = authHeader?.split(" ")[1];
     const search = (req.query.search as string)?.trim();
 
-    let user_id: number | null = null;
+    let user_id: string | null = null;
     let role: number | null = null;
 
     if (token) {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-      user_id = decoded.user_id;
-      role = decoded.role;
+      try {
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        user_id = decoded.user_id;
+        role = Number(decoded.role);
+      } catch {
+        user_id = null;
+        role = null;
+      }
     }
 
     const isGuest = role === null || role === 3;
@@ -80,7 +96,7 @@ export const view = async (req: Request, res: Response) => {
     let rows: any;
 
     if (!search) {
-      if (!isGuest) {
+      if (!isGuest && user_id) {
         [rows] = await db.execute(
           `
           SELECT c.class_id, c.class_name, c.class_describe, c.created_datetime
@@ -89,6 +105,7 @@ export const view = async (req: Request, res: Response) => {
           WHERE c.deleted_flg = 0
             AND cu.user_id = ?
             AND cu.view_flg = 0
+            AND cu.deleted_flg = 0
           ORDER BY c.created_datetime DESC
           `,
           [user_id],
@@ -106,7 +123,7 @@ export const view = async (req: Request, res: Response) => {
     } else {
       const keyword = `%${search}%`;
 
-      if (!isGuest) {
+      if (!isGuest && user_id) {
         [rows] = await db.execute(
           `
           SELECT DISTINCT
@@ -116,10 +133,11 @@ export const view = async (req: Request, res: Response) => {
             c.created_datetime
           FROM classes c
           LEFT JOIN class_users cu ON cu.class_id = c.class_id
-          LEFT JOIN class_assignments ca ON ca.class_id = c.class_id
+          LEFT JOIN class_assignments ca ON ca.class_id = c.class_id AND ca.deleted_flg = 0
           WHERE c.deleted_flg = 0
             AND cu.user_id = ?
             AND cu.view_flg = 0
+            AND cu.deleted_flg = 0
             AND (
               c.class_id LIKE ?
               OR c.class_name LIKE ?
@@ -139,7 +157,7 @@ export const view = async (req: Request, res: Response) => {
             c.class_describe,
             c.created_datetime
           FROM classes c
-          LEFT JOIN class_assignments ca ON ca.class_id = c.class_id
+          LEFT JOIN class_assignments ca ON ca.class_id = c.class_id AND ca.deleted_flg = 0
           WHERE c.deleted_flg = 0
             AND (
               c.class_id LIKE ?
@@ -154,9 +172,9 @@ export const view = async (req: Request, res: Response) => {
       }
     }
 
-    return res.json({ data: rows });
+    return res.json({ data: rows || [] });
   } catch (err) {
-    console.error(err);
+    console.error("view classes error:", err);
     return res.status(500).json({ message: "database error" });
   }
 };
@@ -168,7 +186,7 @@ export const getClassesByCondition = async (req: Request, res: Response) => {
   try {
     const [rows]: any = await conn.query(
       `
-      SELECT class_id, class_name, class_describe
+      SELECT class_id, class_name, class_describe, created_by
       FROM classes
       WHERE deleted_flg = 0 AND class_id = ?
       `,
@@ -191,11 +209,28 @@ export const getClassesByCondition = async (req: Request, res: Response) => {
 export const updateClass = async (req: Request, res: Response) => {
   const { classId } = req.params;
   const { class_name, class_describe } = req.body;
+  const userId = (req as any).user?.user_id || (req as any).user?.id;
+  const userRole = Number((req as any).user?.role);
 
   const conn = await db.getConnection();
 
   try {
-    const [result]: any = await conn.query(
+    const [classRows]: any = await conn.query(
+      `SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0`,
+      [classId]
+    );
+
+    if (classRows.length === 0) {
+      return res.status(404).json({ message: "ไม่พบรายวิชา" });
+    }
+
+    const isCreator = String(classRows[0].created_by) === String(userId);
+    const isAdmin = userRole === 0;
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ message: "ไม่มีสิทธิ์แก้ไขรายวิชานี้" });
+    }
+
+    await conn.query(
       `
       UPDATE classes
       SET class_name = ?, class_describe = ?
@@ -203,10 +238,6 @@ export const updateClass = async (req: Request, res: Response) => {
       `,
       [class_name, class_describe, classId],
     );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "ไม่พบรายวิชา" });
-    }
 
     res.json({ message: "อัปเดตรายวิชาสำเร็จ" });
   } catch (err) {
@@ -218,25 +249,22 @@ export const updateClass = async (req: Request, res: Response) => {
 };
 
 export const getClassesByUser = async (req: any, res: Response) => {
-  const userId = req.user.user_id;
+  const userId = req.user?.user_id || req.user?.id;
   const conn = await db.getConnection();
 
   try {
     const [rows]: any = await conn.query(
       `
-      SELECT * FROM class_users AS cu 
-      LEFT OUTER JOIN classes AS c ON c.class_id = cu.class_id
-      WHERE cu.user_id = ?
-      ORDER BY cu.created_datetime
+      SELECT c.class_id, c.class_name, c.class_describe, cu.created_datetime
+      FROM class_users AS cu 
+      INNER JOIN classes AS c ON c.class_id = cu.class_id
+      WHERE cu.user_id = ? AND cu.deleted_flg = 0 AND c.deleted_flg = 0
+      ORDER BY cu.created_datetime DESC
       `,
       [userId],
     );
 
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "ไม่พบรายวิชา" });
-    }
-
-    res.json({ data: rows });
+    res.json({ data: rows || [] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "database error" });
@@ -247,7 +275,7 @@ export const getClassesByUser = async (req: any, res: Response) => {
 
 export const getClassesByTeacher = async (req: Request, res: Response) => {
   const conn = await db.getConnection();
-  const userId = req.user.user_id;
+  const userId = (req as any).user?.user_id || (req as any).user?.id;
 
   try {
     const [rows]: any = await conn.query(
@@ -262,6 +290,7 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
         ON cu.class_id = c.class_id
         AND cu.user_id = ?
         AND cu.view_flg = 0
+        AND cu.deleted_flg = 0
       LEFT JOIN class_assignments a
         ON a.class_id = c.class_id
         AND a.deleted_flg = 0
@@ -276,7 +305,7 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
       [userId],
     );
 
-    res.json({ data: rows });
+    res.json({ data: rows || [] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "database error" });
@@ -287,12 +316,28 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
 
 export const deletedClass = async (req: Request, res: Response) => {
   const { classId } = req.params;
-  const userId = req.user.user_id;
+  const userId = (req as any).user?.user_id || (req as any).user?.id;
+  const userRole = Number((req as any).user?.role);
 
   const conn = await db.getConnection();
 
   try {
-    const [result]: any = await conn.query(
+    const [classRows]: any = await conn.query(
+      `SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0`,
+      [classId]
+    );
+
+    if (classRows.length === 0) {
+      return res.status(404).json({ message: "ไม่พบรายวิชา" });
+    }
+
+    const isCreator = String(classRows[0].created_by) === String(userId);
+    const isAdmin = userRole === 0;
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ message: "ไม่มีสิทธิ์ลบรายวิชานี้" });
+    }
+
+    await conn.query(
       `
       UPDATE classes
       SET deleted_flg = 1,
@@ -302,19 +347,11 @@ export const deletedClass = async (req: Request, res: Response) => {
       [userId, classId]
     );
 
-    if (result.affectedRows === 0) {
-      return res
-        .status(404)
-        .json({ message: "ไม่พบรายวิชา" });
-    }
-
     res.json({ message: "ลบรายวิชาสำเร็จ" });
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ message: "database error" });
+    res.status(500).json({ message: "database error" });
   } finally {
     conn.release();
   }
-};
+};
