@@ -9,10 +9,40 @@ export const createAssignment = async (req: any, res: Response) => {
   try {
     const { class_id, title, detail, link, work_type } = req.body;
     const userId = req.user?.user_id || req.user?.id;
+    const userRole = Number(req.user?.role);
     const files = (req.files as Express.Multer.File[]) || [];
 
+    if (userRole !== 0 && userRole !== 1 && userRole !== 2) {
+      return res.status(403).json({
+        message: "สงวนสิทธิ์การส่งผลงานเฉพาะนิสิตและอาจารย์ในรายวิชาเท่านั้น",
+      });
+    }
+
     if (!class_id || !title?.trim()) {
-      return res.status(400).json({ message: "ข้อมูลไม่ครบถ้วน (กรุณาระบุชื่อผลงาน)" });
+      return res.status(400).json({ message: "ข้อมูลไม่ครบถ้วน (กรุณาระบุชื่อผลงานและรายวิชา)" });
+    }
+
+    const [classRows]: any = await conn.query(
+      "SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0",
+      [class_id]
+    );
+
+    if (classRows.length === 0) {
+      return res.status(404).json({ message: "ไม่พบรายวิชาที่ระบุ" });
+    }
+
+    if (userRole !== 0) {
+      const isClassCreator = String(classRows[0].created_by) === String(userId);
+      const [enrolled]: any = await conn.query(
+        "SELECT 1 FROM class_users WHERE class_id = ? AND user_id = ? AND deleted_flg = 0",
+        [class_id, userId]
+      );
+
+      if (!isClassCreator && enrolled.length === 0) {
+        return res.status(403).json({
+          message: "คุณไม่ได้เป็นสมาชิกในรายวิชานี้ จึงไม่สามารถสร้างหรือส่งผลงานได้",
+        });
+      }
     }
 
     await conn.beginTransaction();

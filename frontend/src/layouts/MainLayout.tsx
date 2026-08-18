@@ -41,18 +41,31 @@ function MainLayout() {
         setRole(data.role);
         if (data.role !== undefined && data.role !== null) {
           localStorage.setItem("role_flg", String(data.role));
+          localStorage.setItem("role", String(data.role));
+        }
+        if (data.user_id) {
+          localStorage.setItem("user_id", String(data.user_id));
         }
       })
       .catch(() => {
         localStorage.removeItem("token");
+        localStorage.removeItem("role");
         localStorage.removeItem("role_flg");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user");
+        setIsLogin(false);
+        setUsername(null);
+        setRole(null);
         navigate("/login");
       });
   }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
     localStorage.removeItem("role_flg");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user");
     setIsLogin(false);
     setUsername(null);
     setRole(null);

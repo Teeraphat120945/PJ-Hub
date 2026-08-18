@@ -5,7 +5,7 @@ export const getClasses = async (req: Request, res: Response) => {
   const conn = await db.getConnection();
   const user = (req as any).user;
 
-  const userId = user.user_id;
+  const userId = user?.user_id || user?.id;
   try {
     const [rows] = await conn.query(
       `SELECT c.class_id, c.class_name
@@ -27,17 +27,40 @@ export const getClasses = async (req: Request, res: Response) => {
 export const getClassUsers = async (req: Request, res: Response) => {
   const conn = await db.getConnection();
   const { classId } = req.params;
+  const requesterId = (req as any).user?.user_id || (req as any).user?.id;
+  const requesterRole = Number((req as any).user?.role);
+
   try {
+    if (requesterRole !== 0) {
+      const [classRows]: any = await conn.query(
+        "SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0",
+        [classId]
+      );
+      if (classRows.length === 0) {
+        return res.status(404).json({ message: "ไม่พบรายวิชา" });
+      }
+
+      const isCreator = String(classRows[0].created_by) === String(requesterId);
+      const [membership]: any = await conn.query(
+        "SELECT 1 FROM class_users WHERE class_id = ? AND user_id = ? AND deleted_flg = 0",
+        [classId, requesterId]
+      );
+
+      if (!isCreator && membership.length === 0) {
+        return res.status(403).json({ message: "ไม่มีสิทธิ์เข้าถึงรายชื่อสมาชิกในรายวิชานี้" });
+      }
+    }
+
     const [rows] = await conn.query(
-    `
-    SELECT cu.user_id, u.user_name, cu.view_flg, u.role_flg, roles.role_name
-    FROM class_users AS cu
-    LEFT JOIN users AS u ON cu.user_id = u.user_id
-    LEFT JOIN ref_role as roles ON roles.role_id = u.role_flg
-    WHERE u.deleted_flg = 0 AND cu.deleted_flg = 0 AND cu.class_id = ?
-    GROUP BY cu.user_id, u.user_name, cu.view_flg, u.role_flg, roles.role_name
-    `,
-    [classId]
+      `
+      SELECT cu.user_id, u.user_name, cu.view_flg, u.role_flg, roles.role_name
+      FROM class_users AS cu
+      LEFT JOIN users AS u ON cu.user_id = u.user_id
+      LEFT JOIN ref_role as roles ON roles.role_id = u.role_flg
+      WHERE u.deleted_flg = 0 AND cu.deleted_flg = 0 AND cu.class_id = ?
+      GROUP BY cu.user_id, u.user_name, cu.view_flg, u.role_flg, roles.role_name
+      `,
+      [classId]
     );
     res.json({ data: rows });
   } catch (err) {
@@ -51,9 +74,27 @@ export const getClassUsers = async (req: Request, res: Response) => {
 export const addClassUser = async (req: Request, res: Response) => {
   const { classId } = req.params;
   const { user_id } = req.body;
+  const requesterId = (req as any).user?.user_id || (req as any).user?.id;
+  const requesterRole = Number((req as any).user?.role);
   const conn = await db.getConnection();
 
   try {
+    const [classRows]: any = await conn.query(
+      "SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0",
+      [classId]
+    );
+    if (classRows.length === 0) {
+      return res.status(404).json({ message: "ไม่พบรายวิชา" });
+    }
+
+    const isCreator = String(classRows[0].created_by) === String(requesterId);
+    const isAdmin = requesterRole === 0;
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({
+        message: "สงวนสิทธิ์เฉพาะอาจารย์ผู้รับผิดชอบรายวิชาหรือผู้ดูแลระบบเท่านั้น",
+      });
+    }
+
     const [rows]: any = await conn.query(
       `
       SELECT deleted_flg
@@ -98,15 +139,33 @@ export const addClassUser = async (req: Request, res: Response) => {
 
 export const removeUser = async (req: Request, res: Response) => {
   const { classId, userId } = req.params;
+  const requesterId = (req as any).user?.user_id || (req as any).user?.id;
+  const requesterRole = Number((req as any).user?.role);
   const conn = await db.getConnection();
-  const deletedBy = (req as any).user?.user_id || (req as any).user?.id;
+
   try {
+    const [classRows]: any = await conn.query(
+      "SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0",
+      [classId]
+    );
+    if (classRows.length === 0) {
+      return res.status(404).json({ message: "ไม่พบรายวิชา" });
+    }
+
+    const isCreator = String(classRows[0].created_by) === String(requesterId);
+    const isAdmin = requesterRole === 0;
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({
+        message: "สงวนสิทธิ์เฉพาะอาจารย์ผู้รับผิดชอบรายวิชาหรือผู้ดูแลระบบเท่านั้น",
+      });
+    }
+
     const [targetUsers]: any = await conn.query(
       `SELECT role_flg FROM users WHERE user_id = ?`,
       [userId]
     );
 
-    if (targetUsers.length > 0 && targetUsers[0].role_flg === 0) {
+    if (targetUsers.length > 0 && Number(targetUsers[0].role_flg) === 0) {
       return res.status(403).json({
         message: "ไม่สามารถลบผู้ดูแลระบบ (Admin) ออกจากรายวิชาได้",
       });
@@ -121,7 +180,7 @@ export const removeUser = async (req: Request, res: Response) => {
       WHERE class_id = ?
         AND user_id = ?
       `,
-      [deletedBy, classId, userId]
+      [requesterId, classId, userId]
     );
 
     res.json({ message: "ลบผู้ใช้ออกจากคลาสเรียบร้อย" });
@@ -132,6 +191,7 @@ export const removeUser = async (req: Request, res: Response) => {
     conn.release();
   }
 };
+
 
 
 

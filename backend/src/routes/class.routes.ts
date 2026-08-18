@@ -1,18 +1,26 @@
 import { Router } from "express";
-import { create, view, getClassesByCondition, updateClass, getClassesByUser, getClassesByTeacher, deletedClass } from "../controllers/class.controller";
-import { authMiddleware } from "../middlewares/auth.middlewares";
+import {
+  create,
+  view,
+  getClassesByCondition,
+  updateClass,
+  getClassesByUser,
+  getClassesByTeacher,
+  deletedClass,
+} from "../controllers/class.controller";
+import { authMiddleware, authorizeRoles } from "../middlewares/auth.middlewares";
 
 const router = Router();
 
-router.post("/create", authMiddleware, create);
+router.post("/create", authMiddleware, authorizeRoles(0, 1), create);
 router.get("/view", view);
 
-router.get("/getclass/by-teacher", authMiddleware, getClassesByTeacher);
+router.get("/getclass/by-teacher", authMiddleware, authorizeRoles(0, 1), getClassesByTeacher);
 router.get("/getclass/by-user", authMiddleware, getClassesByUser);
 router.get("/getclass/:classId", getClassesByCondition);
 
-router.put("/update/:classId", authMiddleware, updateClass);
+router.put("/update/:classId", authMiddleware, authorizeRoles(0, 1), updateClass);
+router.delete("/delete/:classId", authMiddleware, authorizeRoles(0, 1), deletedClass);
 
-router.delete("/delete/:classId", authMiddleware, deletedClass);
-router.delete("/deleted/:classId", authMiddleware, deletedClass);
 export default router;
+

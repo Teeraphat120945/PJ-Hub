@@ -20,11 +20,33 @@ export const authMiddleware = (
     const decoded = jwt.verify(
       token,
       JWT_SECRET
-    ) as Request["user"];
+    ) as NonNullable<Request["user"]>;
 
     req.user = decoded;
     next();
   } catch {
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
-};
+};
+
+/**
+ * Middleware สำหรับตรวจสอบ Role ของผู้ใช้งาน
+ * @param allowedRoles รายการ Role ที่ได้รับอนุญาต (เช่น 0 = Admin, 1 = Teacher, 2 = Student)
+ */
+export const authorizeRoles = (...allowedRoles: number[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "กรุณาเข้าสู่ระบบก่อนทำรายการ" });
+    }
+
+    const userRole = Number(req.user.role);
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({
+        message: "คุณไม่มีสิทธิ์ในการเข้าถึงทรัพยากรนี้ (Forbidden)",
+      });
+    }
+
+    next();
+  };
+};
+

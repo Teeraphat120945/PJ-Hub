@@ -128,24 +128,52 @@ export const updateUserActive = async (req: Request, res: Response) => {
 
 export const getAvaliableUsers = async (req: Request, res: Response) => {
   const { classId } = req.params;
+  const requesterId = (req as any).user?.user_id || (req as any).user?.id;
+  const requesterRole = Number((req as any).user?.role);
 
-  const sql = `
-    SELECT u.user_id, u.user_name, u.role_flg
-    FROM users AS u
-    WHERE u.user_id NOT IN (
-      SELECT cu.user_id
-      FROM class_users AS cu
-      WHERE cu.class_id = ?
-        AND cu.deleted_flg = 0
-    ) AND u.deleted_flg = 0
-      AND u.role_flg != 0
-  `;
+  const conn = await db.getConnection();
+  try {
+    if (requesterRole !== 0) {
+      const [classRows]: any = await conn.query(
+        "SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0",
+        [classId]
+      );
 
-  const [users] = await db.query(sql, [classId]);
+      if (classRows.length === 0) {
+        return res.status(404).json({ message: "ไม่พบรายวิชา" });
+      }
 
-  res.json({
-    data: users,
-  });
+      const isCreator = String(classRows[0].created_by) === String(requesterId);
+      if (!isCreator) {
+        return res.status(403).json({
+          message: "สงวนสิทธิ์เฉพาะอาจารย์ผู้รับผิดชอบรายวิชาหรือผู้ดูแลระบบเท่านั้น",
+        });
+      }
+    }
+
+    const sql = `
+      SELECT u.user_id, u.user_name, u.role_flg
+      FROM users AS u
+      WHERE u.user_id NOT IN (
+        SELECT cu.user_id
+        FROM class_users AS cu
+        WHERE cu.class_id = ?
+          AND cu.deleted_flg = 0
+      ) AND u.deleted_flg = 0
+        AND u.role_flg != 0
+    `;
+
+    const [users] = await conn.query(sql, [classId]);
+
+    res.json({
+      data: users,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "database error" });
+  } finally {
+    conn.release();
+  }
 };
 
 export const getRoles = async (req: any, res: any) => {
