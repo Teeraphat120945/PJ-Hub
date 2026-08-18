@@ -66,7 +66,8 @@ export const createAssignment = async (
     body: formData,
   });
   if (!res.ok) {
-    throw new Error("สร้างผลงานไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "สร้างผลงานไม่สำเร็จ");
   }
 };
 
@@ -78,7 +79,8 @@ export const getAssignmentByClass = async (
   });
 
   if (!res.ok) {
-    throw new Error("โหลดผลงานไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "โหลดผลงานไม่สำเร็จ");
   }
 
   const data: { data: Assignment[] } = await res.json();
@@ -94,7 +96,8 @@ export const getAssignmentDetail = async (
   });
 
   if (!res.ok) {
-    throw new Error("ไม่สามารถโหลดรายละเอียดงานได้");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "ไม่สามารถโหลดรายละเอียดผลงานได้");
   }
 
   const json: { data: Assignment } = await res.json();
@@ -141,7 +144,8 @@ export const getAssignmentByUser = async () => {
   });
 
   if (!res.ok) {
-    throw new Error("โหลดผลงานไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "โหลดผลงานไม่สำเร็จ");
   }
 
   const json = await res.json();
@@ -177,7 +181,8 @@ export const updateAssignment = async (
   });
 
   if (!res.ok) {
-    throw new Error("แก้ไขผลงานไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "แก้ไขผลงานไม่สำเร็จ");
   }
 };
 
@@ -188,6 +193,7 @@ export const deleteAssignment = async (assignmentId: number) => {
   });
 
   if (!res.ok) {
-    throw new Error("ลบผลงานไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "ลบผลงานไม่สำเร็จ");
   }
 };

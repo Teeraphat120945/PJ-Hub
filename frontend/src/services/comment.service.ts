@@ -49,13 +49,11 @@ export const addCommentService = async (
   );
 
   if (!res.ok) {
-    throw new Error(
-      "สร้าง comment ไม่สำเร็จ"
-    );
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "สร้างความคิดเห็นไม่สำเร็จ");
   }
 
   const data = await res.json();
-
   return data;
 };
 
@@ -70,11 +68,11 @@ export const getCommentsService = async (
   });
 
   if (!res.ok) {
-    throw new Error("โหลด comment ไม่สำเร็จ");
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "โหลดความคิดเห็นไม่สำเร็จ");
   }
 
   const data = await res.json();
-
   return data;
 };
 
@@ -94,7 +92,8 @@ export const updateCommentService = async (
   });
 
   if (!res.ok) {
-    throw new Error("แก้ไข comment ไม่สำเร็จ");
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "แก้ไขความคิดเห็นไม่สำเร็จ");
   }
 
   return await res.json();
@@ -107,7 +106,8 @@ export const deleteCommentService = async (comment_id: number) => {
   });
 
   if (!res.ok) {
-    throw new Error("ลบ comment ไม่สำเร็จ");
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "ลบความคิดเห็นไม่สำเร็จ");
   }
 
   return await res.json();

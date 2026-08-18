@@ -50,21 +50,33 @@ function AssignmentEdit() {
         setLoading(true);
         const res = await getAssignmentDetail(assignment_id);
 
+        const currentUserId = localStorage.getItem("user_id");
+        const currentRole = Number(localStorage.getItem("role") || localStorage.getItem("role_flg"));
+        const isOwner = String(res.created_by) === String(currentUserId);
+        const isClassOwner = String(res.class_created_by) === String(currentUserId);
+        const isAdmin = currentRole === 0;
+
+        if (!isOwner && !isClassOwner && !isAdmin) {
+          toast.error("คุณไม่มีสิทธิ์แก้ไขผลงานนี้");
+          navigate(`/assignment/${assignment_id}`, { replace: true });
+          return;
+        }
+
         setAssignment({
           ...res,
           files: Array.isArray(res.files) ? res.files : [],
         });
-      } catch (err) {
+      } catch (err: any) {
         console.error("โหลดข้อมูลผลงานไม่สำเร็จ", err);
         setAssignment(null);
-        toast.error("โหลดข้อมูลผลงานไม่สำเร็จ");
+        toast.error(err.message || "โหลดข้อมูลผลงานไม่สำเร็จ");
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [assignment_id]);
+  }, [assignment_id, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,9 +97,9 @@ function AssignmentEdit() {
 
       toast.success("แก้ไขผลงานสำเร็จ");
       navigate(`/assignment/${assignment.assignment_id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("แก้ไขผลงานไม่สำเร็จ");
+      toast.error(err.message || "แก้ไขผลงานไม่สำเร็จ");
     } finally {
       setSaving(false);
     }

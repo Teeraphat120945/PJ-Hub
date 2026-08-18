@@ -24,18 +24,30 @@ const ClassEdit = () => {
       try {
         setPageLoading(true);
         const data = await fetchClassDetail(class_id);
+
+        const currentUserId = localStorage.getItem("user_id");
+        const currentRole = Number(localStorage.getItem("role") || localStorage.getItem("role_flg"));
+        const isCreator = String(data.created_by) === String(currentUserId);
+        const isAdmin = currentRole === 0;
+
+        if (!isCreator && !isAdmin) {
+          toast.error("คุณไม่มีสิทธิ์แก้ไขรายวิชานี้");
+          navigate(`/class/${class_id}`, { replace: true });
+          return;
+        }
+
         setClassName(data.class_name);
         setDescribe(data.class_describe || "");
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        toast.error("โหลดข้อมูลรายวิชาไม่สำเร็จ");
+        toast.error(err.message || "โหลดข้อมูลรายวิชาไม่สำเร็จ");
       } finally {
         setPageLoading(false);
       }
     };
 
     loadDetail();
-  }, [class_id]);
+  }, [class_id, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,9 +63,9 @@ const ClassEdit = () => {
       await updateClass(class_id, className.trim(), describe.trim());
       toast.success("บันทึกการแก้ไขสำเร็จ");
       navigate(`/class/${class_id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("แก้ไขรายวิชาไม่สำเร็จ");
+      toast.error(err.message || "แก้ไขรายวิชาไม่สำเร็จ");
     } finally {
       setLoading(false);
     }

@@ -43,8 +43,14 @@ function UserManagement() {
   }, []);
 
   const currentRole = Number(localStorage.getItem("role") || localStorage.getItem("role_flg"));
+  const currentUserId = localStorage.getItem("user_id");
 
   const changeRole = async (user_id: string, role_flg: number) => {
+    if (String(user_id) === String(currentUserId)) {
+      toast.warning("ไม่สามารถเปลี่ยนระดับสิทธิ์ของบัญชีตนเองได้");
+      return;
+    }
+
     if (!window.confirm("ยืนยันการเปลี่ยนสิทธิ์ผู้ใช้?")) return;
 
     try {
@@ -61,6 +67,11 @@ function UserManagement() {
   };
 
   const toggleActive = async (user: User) => {
+    if (String(user.user_id) === String(currentUserId)) {
+      toast.warning("ไม่สามารถปิดการใช้งานบัญชีของตนเองได้");
+      return;
+    }
+
     const actionText = user.deleted_flg === 0 ? "ปิดการใช้งาน" : "เปิดการใช้งาน";
     if (!window.confirm(`ยืนยันการ${actionText}ผู้ใช้รายนี้?`)) return;
 
@@ -76,8 +87,8 @@ function UserManagement() {
       );
 
       toast.success("อัปเดตสถานะเรียบร้อย");
-    } catch {
-      toast.error("อัปเดตสถานะไม่สำเร็จ");
+    } catch (err: any) {
+      toast.error(err.message || "อัปเดตสถานะไม่สำเร็จ");
     }
   };
 
@@ -100,31 +111,32 @@ function UserManagement() {
   return (
     <div className="user-management-page">
       <div className="user-management-header">
-        <div className="user-management-title-group">
+        <div className="title-group">
           <div className="title-icon-box">
             <FiShield size={24} />
           </div>
           <div>
-            <h2>จัดการผู้ใช้งานในระบบ</h2>
-            <p className="subtitle">
-              กำหนดสิทธิ์การเข้าถึงและสถานะการใช้งานของสมาชิกทั้งหมด {users.length} คน
+            <h2 className="page-title">จัดการผู้ใช้งานในระบบ</h2>
+            <p className="page-subtitle">
+              ตรวจสอบสิทธิ์การเข้าใช้งาน กำหนดบทบาท และระงับการเข้าถึงของผู้ใช้ ({users.length} คน)
             </p>
           </div>
         </div>
 
-        <div className="user-search-wrapper">
+        <div className="user-management-search-wrapper">
           <FiSearch className="search-icon" size={18} />
           <input
             type="text"
-            placeholder="ค้นหาชื่อ หรือ รหัสผู้ใช้..."
+            className="user-management-search-input"
+            placeholder="ค้นหาชื่อผู้ใช้ หรือรหัสประจำตัว..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
             <button
-              className="clear-search-btn"
+              className="search-clear-btn"
               onClick={() => setSearch("")}
-              title="ล้างการค้นหา"
+              title="ล้างคำค้นหา"
             >
               ✕
             </button>
@@ -145,74 +157,88 @@ function UserManagement() {
           </thead>
 
           <tbody>
-            {filteredUsers.map((user) => (
-              <tr key={user.user_id}>
-                <td className="user-id-col">{user.user_id}</td>
-                <td>
-                  <div className="user-cell-name">
-                    <div className="user-cell-avatar">
-                      {user.user_name ? user.user_name.charAt(0).toUpperCase() : "U"}
+            {filteredUsers.map((user) => {
+              const isSelf = String(user.user_id) === String(currentUserId);
+
+              return (
+                <tr key={user.user_id}>
+                  <td className="user-id-col">{user.user_id}</td>
+                  <td>
+                    <div className="user-cell-name">
+                      <div className="user-cell-avatar">
+                        {user.user_name ? user.user_name.charAt(0).toUpperCase() : "U"}
+                      </div>
+                      <span>
+                        {user.user_name} {isSelf && <strong style={{ color: "var(--up-gold)" }}>(คุณ)</strong>}
+                      </span>
                     </div>
-                    <span>{user.user_name}</span>
-                  </div>
-                </td>
+                  </td>
 
-                <td>
-                  {currentRole === 1 && (user.role_flg === 0 || user.role_flg === 1) ? (
-                    <span className={`member-role-chip role-chip-${user.role_flg === 0 ? "admin" : "teacher"}`}>
-                      {user.role_name || (user.role_flg === 0 ? "ผู้ดูแลระบบ" : "อาจารย์")}
-                    </span>
-                  ) : (
-                    <select
-                      className={`role-select role-flg-${user.role_flg}`}
-                      value={user.role_flg}
-                      onChange={(e) =>
-                        changeRole(user.user_id, Number(e.target.value))
-                      }
+                  <td>
+                    {isSelf ? (
+                      <span className="member-role-chip role-chip-admin" title="บัญชีของคุณ">
+                        {user.role_name || "ผู้ดูแลระบบ"}
+                      </span>
+                    ) : currentRole === 1 && (user.role_flg === 0 || user.role_flg === 1) ? (
+                      <span className={`member-role-chip role-chip-${user.role_flg === 0 ? "admin" : "teacher"}`}>
+                        {user.role_name || (user.role_flg === 0 ? "ผู้ดูแลระบบ" : "อาจารย์")}
+                      </span>
+                    ) : (
+                      <select
+                        className={`role-select role-flg-${user.role_flg}`}
+                        value={user.role_flg}
+                        onChange={(e) =>
+                          changeRole(user.user_id, Number(e.target.value))
+                        }
+                      >
+                        {roles
+                          .filter((r) => currentRole === 0 || r.role_id === 2 || r.role_id === 3)
+                          .map((role) => (
+                            <option key={role.role_id} value={role.role_id}>
+                              {role.role_name}
+                            </option>
+                          ))}
+                      </select>
+                    )}
+                  </td>
+
+                  <td>
+                    <span
+                      className={`status-chip ${user.deleted_flg === 0 ? "active" : "inactive"}`}
                     >
-                      {roles
-                        .filter((r) => currentRole === 0 || r.role_id === 2 || r.role_id === 3)
-                        .map((role) => (
-                          <option key={role.role_id} value={role.role_id}>
-                            {role.role_name}
-                          </option>
-                        ))}
-                    </select>
-                  )}
-                </td>
-
-                <td>
-                  <span
-                    className={`status-chip ${user.deleted_flg === 0 ? "active" : "inactive"}`}
-                  >
-                    ● {user.deleted_flg === 0 ? "ใช้งานปกติ" : "ปิดการใช้งาน"}
-                  </span>
-                </td>
-
-                <td>
-                  {currentRole === 0 ? (
-                    <button
-                      className={`btn-action-status ${user.deleted_flg === 0 ? "danger" : "success"}`}
-                      onClick={() => toggleActive(user)}
-                    >
-                      {user.deleted_flg === 0 ? (
-                        <>
-                          <FiUserX size={15} /> ปิดใช้งาน
-                        </>
-                      ) : (
-                        <>
-                          <FiUserCheck size={15} /> เปิดใช้งาน
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
-                      -
+                      ● {user.deleted_flg === 0 ? "ใช้งานปกติ" : "ปิดการใช้งาน"}
                     </span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+
+                  <td>
+                    {isSelf ? (
+                      <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }} title="ไม่สามารถแก้ไขสถานะบัญชีตนเองได้">
+                        บัญชีปัจจุบัน
+                      </span>
+                    ) : currentRole === 0 ? (
+                      <button
+                        className={`btn-action-status ${user.deleted_flg === 0 ? "danger" : "success"}`}
+                        onClick={() => toggleActive(user)}
+                      >
+                        {user.deleted_flg === 0 ? (
+                          <>
+                            <FiUserX size={15} /> ปิดใช้งาน
+                          </>
+                        ) : (
+                          <>
+                            <FiUserCheck size={15} /> เปิดใช้งาน
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+                        -
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
 
             {filteredUsers.length === 0 && (
               <tr>

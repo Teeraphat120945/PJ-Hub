@@ -33,8 +33,9 @@ function AssignmentManagement() {
         setLoading(true);
         const data = await getAssignmentByUser();
         setAssignments(data);
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
+        toast.error(err.message || "โหลดผลงานของคุณไม่สำเร็จ");
       } finally {
         setLoading(false);
       }
@@ -53,9 +54,9 @@ function AssignmentManagement() {
         prev.filter((a) => a.assignment_id !== assignmentId),
       );
       toast.success("ลบผลงานสำเร็จ");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.warning("ลบผลงานไม่สำเร็จ");
+      toast.error(err.message || "ลบผลงานไม่สำเร็จ");
     }
   };
 

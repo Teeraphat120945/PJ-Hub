@@ -28,7 +28,10 @@ export const fetchClasses = async (): Promise<Class[]> => {
     headers: authHeader(),
   });
 
-  if (!res.ok) throw new Error("fetch classes error");
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "โหลดรายวิชาไม่สำเร็จ");
+  }
 
   const data = await res.json();
   return data.data;
@@ -39,7 +42,10 @@ export const fetchClassUsers = async (
 ): Promise<ClassUser[]> => {
   const res = await fetch(`${API}/${classId}/users`, { headers: authHeader() });
 
-  if (!res.ok) throw new Error("fetch class users error");
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "โหลดข้อมูลสมาชิกในวิชาไม่สำเร็จ");
+  }
 
   const data = await res.json();
   return data.data;
@@ -56,8 +62,8 @@ export const addClassUser = async (classId: string, user_id: string) => {
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err || "add user error");
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "เพิ่มผู้ใช้เข้าคลาสไม่สำเร็จ");
   }
 
   return res.json();
@@ -69,5 +75,9 @@ export const removeClassUser = async (classId: string, userId: string) => {
     headers: authHeader(),
   });
 
-  if (!res.ok) throw new Error("remove user error");
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || "ลบผู้ใช้ออกจากคลาสไม่สำเร็จ");
+  }
 };
+

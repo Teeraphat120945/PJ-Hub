@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiBookOpen, FiFolder, FiArrowRight, FiPlusSquare } from "react-icons/fi";
 import { getTeacherClasses } from "../../services/class.service";
 import "../../css/classes/TeacherClassManagement.css";
+import { toast } from "react-toastify";
 
 type TeacherClassItem = {
   class_id: string;
@@ -21,8 +22,9 @@ function TeacherClassManagement() {
         setLoading(true);
         const data = await getTeacherClasses();
         setClasses(data);
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
+        toast.error(err.message || "โหลดรายวิชาที่ดูแลไม่สำเร็จ");
       } finally {
         setLoading(false);
       }

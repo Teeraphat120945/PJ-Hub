@@ -16,6 +16,8 @@ export type Class = {
   class_id: string;
   class_name: string;
   class_describe?: string;
+  created_by?: string;
+  created_datetime?: string;
 };
 
 type TeacherClassItem = {
@@ -38,7 +40,7 @@ export const createClass = async (
     body: JSON.stringify({ classId, className, describe }),
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
     throw new Error(data.message || "สร้างรายวิชาไม่สำเร็จ");
@@ -58,6 +60,11 @@ export const fetchClasses = async (search?: string) => {
       : {},
   });
 
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "โหลดข้อมูลรายวิชาไม่สำเร็จ");
+  }
+
   const data = await res.json();
   return data.data;
 };
@@ -68,7 +75,8 @@ export const fetchClassDetail = async (classId: string): Promise<Class> => {
   });
 
   if (!res.ok) {
-    throw new Error("โหลดข้อมูลรายวิชาไม่สำเร็จ");
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "โหลดข้อมูลรายวิชาไม่สำเร็จ");
   }
 
   const data = await res.json();
@@ -92,7 +100,7 @@ export const updateClass = async (
     }),
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
     throw new Error(data.message || "แก้ไขรายวิชาไม่สำเร็จ");
@@ -105,7 +113,8 @@ export const getClassesByUser = async (): Promise<Class[]> => {
   });
 
   if (!res.ok) {
-    throw new Error("โหลดข้อมูลรายวิชาไม่สำเร็จ");
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "โหลดข้อมูลรายวิชาไม่สำเร็จ");
   }
 
   const data: { data: Class[] } = await res.json();
@@ -118,7 +127,8 @@ export const getTeacherClasses = async (): Promise<TeacherClassItem[]> => {
   });
 
   if (!res.ok) {
-    throw new Error("โหลดรายวิชาไม่สำเร็จ");
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "โหลดรายวิชาไม่สำเร็จ");
   }
 
   const data = await res.json();
@@ -137,7 +147,8 @@ export const deleteClass = async (
   );
 
   if (!res.ok) {
-    throw new Error("ลบรายวิชาไม่สำเร็จ");
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "ลบรายวิชาไม่สำเร็จ");
   }
 };
 

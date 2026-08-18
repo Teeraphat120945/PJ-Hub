@@ -54,8 +54,8 @@ const AssignmentDetail = () => {
   );
 
   const isCourseInstructor = Boolean(
-    role === "0" ||
-    role === "1" ||
+    userRole === 0 ||
+    userRole === 1 ||
     (assignment && currentUserId && String(assignment.class_created_by) === String(currentUserId))
   );
 
@@ -66,9 +66,14 @@ const AssignmentDetail = () => {
   useEffect(() => {
     if (!assignment_id) return;
 
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     fetchData();
     fetchComments();
-  }, [assignment_id]);
+  }, [assignment_id, token]);
 
   const fetchData = async () => {
     try {
@@ -282,7 +287,12 @@ const AssignmentDetail = () => {
                 </div>
               ) : assignment.assignment_link ? (
                 <a
-                  href={assignment.assignment_link}
+                  href={
+                    assignment.assignment_link.startsWith("http://") ||
+                    assignment.assignment_link.startsWith("https://")
+                      ? assignment.assignment_link
+                      : `https://${assignment.assignment_link}`
+                  }
                   target="_blank"
                   rel="noreferrer"
                   className="assignment-link-btn"

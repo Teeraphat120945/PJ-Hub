@@ -75,6 +75,8 @@ export const linkOrCreateOAuthUser = async (profile: {
       }
     }
 
+    await conn.beginTransaction();
+
     const [seqRows]: any = await conn.query(
       "SELECT prefix, current_value FROM ref_number WHERE name = 'user' FOR UPDATE"
     );
@@ -97,6 +99,8 @@ export const linkOrCreateOAuthUser = async (profile: {
       [userCode, displayName, email || null, profile.providerId, profile.avatarUrl || null]
     );
 
+    await conn.commit();
+
     const newUser = {
       user_id: userCode,
       user_name: displayName,
@@ -116,6 +120,9 @@ export const linkOrCreateOAuthUser = async (profile: {
     );
 
     return { user: newUser, token, isNew: true, isLinked: false };
+  } catch (error) {
+    await conn.rollback().catch(() => {});
+    throw error;
   } finally {
     conn.release();
   }
@@ -180,6 +187,8 @@ export const register = async (req: Request, res: Response) => {
       }
     }
 
+    await conn.beginTransaction();
+
     const [seqRows]: any = await conn.query(
       "SELECT prefix, current_value FROM ref_number WHERE name = 'user' FOR UPDATE"
     );
@@ -200,6 +209,8 @@ export const register = async (req: Request, res: Response) => {
       [userCode, cleanUsername, cleanEmail || null, hashed]
     );
 
+    await conn.commit();
+
     const token = jwt.sign(
       {
         user_id: userCode,
@@ -213,6 +224,7 @@ export const register = async (req: Request, res: Response) => {
 
     res.status(201).json({ token, message: "สมัครสมาชิกสำเร็จ" });
   } catch (err) {
+    await conn?.rollback().catch(() => {});
     console.error("register error:", err);
     res.status(500).json({ message: "server error" });
   } finally {

@@ -6,21 +6,11 @@ const JWT_SECRET = process.env.JWT_SECRET || "classroom_jwt_secret_key_2026";
 
 export const create = async (req: Request, res: Response) => {
   const { classId, className, describe } = req.body;
+  const userId = (req as any).user?.user_id || (req as any).user?.id;
+  const role = Number((req as any).user?.role);
 
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ message: "unauthorized" });
-  }
-
-  let userId: string;
-  let role: number;
-  try {
-    const decoded: any = jwt.verify(token, JWT_SECRET);
-    userId = decoded.user_id;
-    role = Number(decoded.role);
-  } catch {
-    return res.status(401).json({ message: "invalid token" });
+  if (!classId?.trim() || !className?.trim()) {
+    return res.status(400).json({ message: "กรุณาระบุรหัสรายวิชาและชื่อรายวิชา" });
   }
 
   if (role !== 0 && role !== 1) {
@@ -29,6 +19,15 @@ export const create = async (req: Request, res: Response) => {
 
   const conn = await db.getConnection();
   try {
+    const [existing]: any = await conn.execute(
+      "SELECT class_id FROM classes WHERE class_id = ? AND deleted_flg = 0",
+      [classId.trim()]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "รหัสรายวิชานี้มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น" });
+    }
+
     await conn.beginTransaction();
 
     const [admins]: any = await conn.execute(
@@ -39,14 +38,14 @@ export const create = async (req: Request, res: Response) => {
       `INSERT INTO classes
       (class_id, class_name, class_describe, deleted_flg, created_by)
       VALUES (?, ?, ?, 0, ?)`,
-      [classId, className, describe, userId],
+      [classId.trim(), className.trim(), describe?.trim() || "", userId],
     );
 
     await conn.execute(
       `INSERT INTO class_users
       (class_id, user_id, view_flg, deleted_flg, created_datetime)
       VALUES (?, ?, 0, 0, NOW())`,
-      [classId, userId],
+      [classId.trim(), userId],
     );
 
     for (const admin of admins) {
@@ -56,16 +55,19 @@ export const create = async (req: Request, res: Response) => {
         `INSERT INTO class_users
         (class_id, user_id, view_flg, deleted_flg, created_datetime)
         VALUES (?, ?, 0, 0, NOW())`,
-        [classId, admin.user_id],
+        [classId.trim(), admin.user_id],
       );
     }
 
     await conn.commit();
-    res.status(201).json({ message: "create class success" });
-  } catch (err) {
-    await conn.rollback();
+    res.status(201).json({ message: "สร้างรายวิชาสำเร็จ" });
+  } catch (err: any) {
+    await conn.rollback().catch(() => {});
     console.error("create class error:", err);
-    res.status(500).json({ message: "create class failed" });
+    if (err?.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ message: "รหัสรายวิชานี้มีอยู่ในระบบแล้ว" });
+    }
+    res.status(500).json({ message: "สร้างรายวิชาไม่สำเร็จ" });
   } finally {
     conn.release();
   }
@@ -99,7 +101,7 @@ export const view = async (req: Request, res: Response) => {
       if (!isGuest && user_id) {
         [rows] = await db.execute(
           `
-          SELECT c.class_id, c.class_name, c.class_describe, c.created_datetime
+          SELECT c.class_id, c.class_name, c.class_describe, c.created_datetime, c.created_by
           FROM classes c
           LEFT JOIN class_users cu ON cu.class_id = c.class_id
           WHERE c.deleted_flg = 0
@@ -113,7 +115,7 @@ export const view = async (req: Request, res: Response) => {
       } else {
         [rows] = await db.execute(
           `
-          SELECT c.class_id, c.class_name, c.class_describe, c.created_datetime
+          SELECT c.class_id, c.class_name, c.class_describe, c.created_datetime, c.created_by
           FROM classes c
           WHERE c.deleted_flg = 0
           ORDER BY c.created_datetime DESC
@@ -130,7 +132,8 @@ export const view = async (req: Request, res: Response) => {
             c.class_id,
             c.class_name,
             c.class_describe,
-            c.created_datetime
+            c.created_datetime,
+            c.created_by
           FROM classes c
           LEFT JOIN class_users cu ON cu.class_id = c.class_id
           LEFT JOIN class_assignments ca ON ca.class_id = c.class_id AND ca.deleted_flg = 0
@@ -155,7 +158,8 @@ export const view = async (req: Request, res: Response) => {
             c.class_id,
             c.class_name,
             c.class_describe,
-            c.created_datetime
+            c.created_datetime,
+            c.created_by
           FROM classes c
           LEFT JOIN class_assignments ca ON ca.class_id = c.class_id AND ca.deleted_flg = 0
           WHERE c.deleted_flg = 0

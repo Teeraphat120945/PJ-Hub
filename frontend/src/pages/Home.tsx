@@ -54,6 +54,8 @@ function Home() {
     return () => clearTimeout(timer);
   }, [token, search]);
 
+  const currentUserId = localStorage.getItem("user_id");
+
   const handleDeleteClass = async (classId: string) => {
     if (!window.confirm(`คุณต้องการลบรายวิชา ${classId} ใช่หรือไม่?`)) return;
     try {
@@ -61,8 +63,10 @@ function Home() {
       const data = await fetchClasses(search.trim() || undefined);
       setClasses(data);
       setCurrentPage(1);
-    } catch (err) {
+      toast.success("ลบรายวิชาสำเร็จ");
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || "ลบรายวิชาไม่สำเร็จ");
     }
   };
 
@@ -126,7 +130,9 @@ function Home() {
       ) : (
         <div className="home-class-grid">
           {currentClasses.map((item) => {
-            const canDeleteClass = role === 0 || role === 1;
+            const canDeleteClass =
+              role === 0 ||
+              (role === 1 && item.created_by && String(item.created_by) === String(currentUserId));
 
             return (
               <div

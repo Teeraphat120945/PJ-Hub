@@ -73,7 +73,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
       }
     }
 
-    await conn.execute(
+    const [result]: any = await conn.execute(
       `
       UPDATE users
       SET role_flg = ?
@@ -81,6 +81,10 @@ export const updateUserRole = async (req: Request, res: Response) => {
       `,
       [role_flg, user_id]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "ไม่พบผู้ใช้ในระบบ" });
+    }
 
     res.json({ message: "แก้ไขสิทธิ์ผู้ใช้เรียบร้อย" });
   } catch (err) {
@@ -92,6 +96,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
 };
 
 export const updateUserActive = async (req: Request, res: Response) => {
+  const requesterId = (req as any).user?.user_id || (req as any).user?.id;
   const userRole = (req as any).user?.role;
   if (Number(userRole) !== 0) {
     return res.status(403).json({ message: "สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น" });
@@ -99,6 +104,10 @@ export const updateUserActive = async (req: Request, res: Response) => {
 
   const { user_id } = req.params;
   const { active } = req.body;
+
+  if (String(user_id) === String(requesterId) && Number(active) === 1) {
+    return res.status(400).json({ message: "ไม่สามารถระงับการใช้งานบัญชีของตนเองได้" });
+  }
 
   const conn = await db.getConnection();
   try {

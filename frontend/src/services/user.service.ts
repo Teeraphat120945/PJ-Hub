@@ -33,7 +33,8 @@ export const fetchUsers = async (): Promise<User[]> => {
   });
 
   if (!res.ok) {
-    throw new Error("โหลดผู้ใช้ไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "โหลดผู้ใช้ไม่สำเร็จ");
   }
 
   const data: { data: User[] } = await res.json();
@@ -73,7 +74,8 @@ export const updateUserActive = async (
   });
 
   if (!res.ok) {
-    throw new Error("เปลี่ยนสถานะไม่สำเร็จ");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "เปลี่ยนสถานะไม่สำเร็จ");
   }
 };
 
@@ -82,9 +84,12 @@ export const fetchAvailableUsers = async (classId: string) => {
     headers: authHeader(),
   });
 
-  if (!res.ok) throw new Error("fetch available users error");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
+  }
 
-  const data = await res.json()
+  const data = await res.json();
   return data.data;
 };
 
@@ -93,8 +98,11 @@ export const fetchgetRoles = async (): Promise<Role[]> => {
     headers: authHeader(),
   });
 
-  if (!res.ok) throw new Error("fetch get roles error");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "โหลดระดับสิทธิ์ไม่สำเร็จ");
+  }
 
   const data = await res.json();
   return data;
-};
+};

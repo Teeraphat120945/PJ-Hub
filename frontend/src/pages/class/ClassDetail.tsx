@@ -125,7 +125,7 @@ const ClassDetail = () => {
             <h2 className="class-title-text">{classDetail.class_name}</h2>
           </div>
 
-          {(currentRole === 0 || currentRole === 1) && (
+          {(currentRole === 0 || (currentRole === 1 && classDetail.created_by && String(classDetail.created_by) === String(currentUserId))) && (
             <button
               className="edit-btn"
               onClick={() => navigate(`/class/${class_id}/edit`)}

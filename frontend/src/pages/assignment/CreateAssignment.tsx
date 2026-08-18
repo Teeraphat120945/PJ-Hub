@@ -99,9 +99,9 @@ const CreateAssignment = () => {
 
       toast.success("สร้างผลงานสำเร็จ");
       navigate(`/class/${selectedClass}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("อัปโหลดผลงานไม่สำเร็จ");
+      toast.error(err.message || "อัปโหลดผลงานไม่สำเร็จ");
     } finally {
       setLoading(false);
     }
