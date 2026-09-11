@@ -89,8 +89,13 @@ function Login() {
 
       toast.success("เข้าสู่ระบบสำเร็จ");
       navigate("/", { replace: true });
-    } catch (err: any) {
-      setError(err.message || "เข้าสู่ระบบไม่สำเร็จ");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error");
+      }
+     
     } finally {
       setLoading(false);
     }
@@ -108,8 +113,12 @@ function Login() {
         setDemoEmail(provider === "google" ? "student.up@gmail.com" : "student@up.ac.th");
         setDemoName(provider === "google" ? "Google User" : "Microsoft User");
       }
-    } catch (err: any) {
-      toast.error(err.message || "ไม่สามารถเชื่อมต่อระบบ Social Login ได้");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Unknown error");
+      }
     } finally {
       setLoading(false);
     }
@@ -140,8 +149,12 @@ function Login() {
       toast.success(data.message || `เข้าสู่ระบบด้วย ${showDemoModal} สำเร็จ`);
       setShowDemoModal(null);
       navigate("/", { replace: true });
-    } catch (err: any) {
-      toast.error(err.message || "Social login error");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Unknown error");
+      }
     } finally {
       setLoading(false);
     }
@@ -318,5 +331,3 @@ function Login() {
 }
 
 export default Login;
-
-

@@ -3,7 +3,7 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
-import { initDatabase } from "./db";
+
 import authRoutes from "./routes/auth.routes";
 import classRoutes from "./routes/class.routes";
 import userRoutes from "./routes/user.routes";
@@ -30,5 +30,5 @@ app.get("/", (_req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  await initDatabase();
-});
+  
+});

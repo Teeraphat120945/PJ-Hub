@@ -49,6 +49,10 @@
   box-sizing: border-box;
 }
 
+/* =========================
+   Back Button
+========================= */
+
 .back-btn {
   position: absolute;
   top: 18px;
@@ -186,6 +190,10 @@
   color: var(--up-purple-medium);
 }
 
+/* =========================
+   Normal Login Button
+========================= */
+
 .login-primary-btn {
   width: 100%;
   margin-top: 8px;
@@ -193,6 +201,7 @@
   min-height: 46px;
   background: linear-gradient(135deg, var(--up-purple-primary), var(--up-purple-medium));
   color: #ffffff;
+
   border: none;
   border-radius: var(--radius-md);
   font-size: 0.98rem;
