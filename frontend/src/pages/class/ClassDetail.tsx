@@ -11,8 +11,11 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiLayers,
+  FiPlusSquare,
+  FiCalendar,
 } from "react-icons/fi";
 import { fetchClassDetail, formatViewCount, type Class } from "../../services/class.service";
+import { formatThaiYear } from "../../utils/dateUtils";
 import {
   getAssignmentByClass,
   deleteAssignment,
@@ -118,14 +121,25 @@ const ClassDetail = () => {
         <div className="class-card-top-accent" />
         <div className="class-card-header">
           <div className="class-header-title-group">
-            <span className="class-id-badge">
-              <FiBookOpen size={16} />
-              {classDetail.class_id}
-            </span>
+            <div className="class-header-badges-row">
+              <span className="class-id-badge">
+                <FiBookOpen size={16} />
+                {classDetail.class_id}
+              </span>
+              {classDetail.created_datetime && (
+                <span
+                  className="class-header-year-badge"
+                  title={`ปี พ.ศ. ที่เปิดรายวิชา: ${formatThaiYear(classDetail.created_datetime)}`}
+                >
+                  <FiCalendar size={14} />
+                  {formatThaiYear(classDetail.created_datetime)}
+                </span>
+              )}
+            </div>
             <h2 className="class-title-text">{classDetail.class_name}</h2>
           </div>
 
-          {(currentRole === 0 || (currentRole === 1 && classDetail.created_by && String(classDetail.created_by) === String(currentUserId))) && (
+          {(currentRole === 0 || (currentRole === 1 && (Boolean(classDetail.is_responsible) || (classDetail.created_by && String(classDetail.created_by) === String(currentUserId))))) && (
             <button
               className="edit-btn"
               onClick={() => navigate(`/class/${class_id}/edit`)}
@@ -162,6 +176,17 @@ const ClassDetail = () => {
               </p>
             </div>
           </div>
+
+          {(currentRole === 0 || currentRole === 1 || currentRole === 2) &&
+            (classDetail.is_enrolled || classDetail.is_responsible || currentRole === 0) && (
+            <button
+              className="btn-add-assignment"
+              onClick={() => navigate("/create-assignment", { state: { class_id } })}
+              title="เพิ่มผลงานในรายวิชานี้"
+            >
+              <FiPlusSquare size={16} /> เพิ่มผลงาน
+            </button>
+          )}
         </div>
 
         {assignments.length === 0 ? (
@@ -169,14 +194,28 @@ const ClassDetail = () => {
             <FiLayers size={42} className="empty-icon" />
             <h4>ยังไม่มีผลงานในรายวิชานี้</h4>
             <p>นิสิตและอาจารย์สามารถสร้างผลงานเพื่อส่งในรายวิชานี้ได้</p>
+            {(currentRole === 0 || currentRole === 1 || currentRole === 2) &&
+              (classDetail.is_enrolled || classDetail.is_responsible || currentRole === 0) && (
+              <button
+                className="btn-add-assignment-empty"
+                onClick={() => navigate("/create-assignment", { state: { class_id } })}
+              >
+                <FiPlusSquare size={16} /> เพิ่มผลงานแรก
+              </button>
+            )}
           </div>
         ) : (
           <div className="assignment-grid">
             {currentAssignments.map((a) => {
-              const canDeleteAssignment =
+              const isClassResponsible = Boolean(
                 currentRole === 0 ||
-                currentRole === 1 ||
-                (currentRole === 2 && currentUserId === a.created_by);
+                classDetail.is_responsible ||
+                (classDetail.created_by && String(classDetail.created_by) === String(currentUserId))
+              );
+              const isAssignmentOwner = Boolean(
+                currentUserId && String(a.created_by) === String(currentUserId)
+              );
+              const canDeleteAssignment = isClassResponsible || isAssignmentOwner;
 
               return (
                 <div
@@ -187,7 +226,18 @@ const ClassDetail = () => {
                   <div className="assignment-card-top-accent" />
 
                   <div className="assignment-card-header">
-                    <span className="assignment-type">{a.assignment_type || "ผลงาน"}</span>
+                    <div className="assignment-header-tags">
+                      <span className="assignment-type">{a.assignment_type || "ผลงาน"}</span>
+                      {a.created_datetime && (
+                        <span
+                          className="assignment-year-tag"
+                          title={`ปี พ.ศ. ที่จัดทำ/ส่งผลงาน: ${formatThaiYear(a.created_datetime)}`}
+                        >
+                          <FiCalendar size={12} />
+                          {formatThaiYear(a.created_datetime)}
+                        </span>
+                      )}
+                    </div>
 
                     {canDeleteAssignment && (
                       <button

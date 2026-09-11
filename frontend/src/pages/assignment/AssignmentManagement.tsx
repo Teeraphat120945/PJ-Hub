@@ -7,7 +7,11 @@ import {
   FiEdit2,
   FiTrash2,
   FiBookOpen,
+  FiCalendar,
+  FiClock,
+  FiShield,
 } from "react-icons/fi";
+import { formatThaiYear, calculateExpiryInfo } from "../../utils/dateUtils";
 import {
   getAssignmentByUser,
   deleteAssignment,
@@ -18,8 +22,14 @@ import { toast } from "react-toastify";
 type AssignmentItem = {
   assignment_id: number;
   class_id: string;
-  class_name: string;
+  class_name?: string;
   assignment_name: string;
+  created_datetime?: string;
+  retention_days?: number;
+  expires_at?: string;
+  days_remaining?: number;
+  is_expired?: boolean;
+  is_expiring_soon?: boolean;
 };
 
 function AssignmentManagement() {
@@ -107,28 +117,71 @@ function AssignmentManagement() {
         </div>
       ) : (
         <div className="my-assignment-grid">
-          {assignments.map((a) => (
-            <div
-              key={a.assignment_id}
-              className="my-assignment-card"
-              onClick={() => navigate(`/assignment/${a.assignment_id}`)}
-            >
-              <div className="card-top-line" />
-
-              <div className="my-assignment-top">
-                <span className="class-badge">
-                  <FiBookOpen size={13} /> {a.class_id}
-                </span>
-              </div>
-
-              <h3 className="my-assignment-title" title={a.assignment_name}>
-                {a.assignment_name}
-              </h3>
-
+          {assignments.map((a) => {
+            const expiry = calculateExpiryInfo(a.created_datetime, a.retention_days || 365);
+            return (
               <div
-                className="my-assignment-actions"
-                onClick={(e) => e.stopPropagation()}
+                key={a.assignment_id}
+                className="my-assignment-card"
+                onClick={() => navigate(`/assignment/${a.assignment_id}`)}
               >
+                <div className="card-top-line" />
+
+                <div className="my-assignment-top">
+                  <div className="my-assignment-badges">
+                    <span className="class-badge">
+                      <FiBookOpen size={13} /> {a.class_id}
+                    </span>
+
+                    {a.created_datetime && (
+                      <span
+                        className="assignment-year-badge"
+                        title={`ปี พ.ศ. ที่จัดทำผลงาน: ${formatThaiYear(a.created_datetime)}`}
+                      >
+                        <FiCalendar size={12} />
+                        {formatThaiYear(a.created_datetime)}
+                      </span>
+                    )}
+
+                    <span className="assignment-permanent-chip" title="ไฟล์แนบจัดเก็บบนระบบ UP PJ-Hub ถาวร">
+                      <FiShield size={11} /> จัดเก็บถาวร
+                    </span>
+
+                    {expiry && (
+                      <span
+                        className={`assignment-expiry-chip ${expiry.badgeClass}`}
+                        title={`รอบทบทวนคุณภาพประจำปี: ${expiry.expiryFormatted} (${expiry.remainingLabel})`}
+                      >
+                        <FiClock size={12} />
+                        {expiry.isExpired
+                          ? "ถึงรอบทบทวน"
+                          : expiry.isExpiringSoon
+                          ? `ใกล้ครบกำหนด (${expiry.daysRemaining} วัน)`
+                          : `รอบทบทวน ${expiry.daysRemaining} วัน`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <h3 className="my-assignment-title" title={a.assignment_name}>
+                  {a.assignment_name}
+                </h3>
+
+                {expiry && (
+                  <div className="my-assignment-lifecycle-info">
+                    <span className="lifecycle-expiry-date" title={`รอบทบทวนคุณภาพประจำปี: ${expiry.expiryFormatted}`}>
+                      รอบทบทวน: {expiry.expiryFormatted}
+                    </span>
+                    <span className={`lifecycle-remaining-tag ${expiry.status}`}>
+                      {expiry.remainingLabel}
+                    </span>
+                  </div>
+                )}
+
+                <div
+                  className="my-assignment-actions"
+                  onClick={(e) => e.stopPropagation()}
+                >
                 <button
                   className="btn-action view"
                   onClick={() => navigate(`/assignment/${a.assignment_id}`)}
@@ -156,8 +209,9 @@ function AssignmentManagement() {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
       )}
     </div>
   );

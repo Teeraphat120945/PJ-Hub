@@ -35,6 +35,17 @@ export type Assignment = {
   assignment_link?: string;
   view_cnt: number;
   newFiles?: File[];
+  is_work_owner?: boolean;
+  is_class_responsible?: boolean;
+  can_comment?: boolean;
+  can_edit?: boolean;
+  can_delete?: boolean;
+  can_access_resources?: boolean;
+  retention_days?: number;
+  expires_at?: string;
+  days_remaining?: number;
+  is_expired?: boolean;
+  is_expiring_soon?: boolean;
 };
 
 export type UpdateAssignmentPayload = Assignment & {
@@ -105,7 +116,7 @@ export const getAssignmentDetail = async (
 };
 
 export const downloadAssignmentFile = async (fileId: number, fileName?: string) => {
-  const res = await fetch(`${API}/assignment/file/${fileId}`, {
+  const res = await fetch(`${API}/file/${fileId}`, {
     method: "GET",
     headers: authHeader(),
   });
@@ -117,10 +128,15 @@ export const downloadAssignmentFile = async (fileId: number, fileName?: string) 
 
   let name = fileName || "download";
   const disposition = res.headers.get("Content-Disposition");
-  if (disposition && disposition.includes("filename=")) {
-    const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-    if (match && match[1]) {
-      name = decodeURIComponent(match[1].replace(/['"]/g, ""));
+  if (disposition) {
+    const rfc5987Match = disposition.match(/filename\*=(?:UTF-8''|utf-8'')([^;\n]+)/i);
+    if (rfc5987Match && rfc5987Match[1]) {
+      name = decodeURIComponent(rfc5987Match[1].replace(/['"]/g, "").trim());
+    } else {
+      const regularMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (regularMatch && regularMatch[1]) {
+        name = decodeURIComponent(regularMatch[1].replace(/['"]/g, "").trim());
+      }
     }
   }
 
@@ -196,4 +212,56 @@ export const deleteAssignment = async (assignmentId: number) => {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || "ลบผลงานไม่สำเร็จ");
   }
+};
+
+export type SearchAssignmentResult = {
+  assignment_id: number;
+  assignment_name: string;
+  assignment_type: string;
+  assignment_detail?: string;
+  created_datetime: string;
+  view_cnt: number;
+  class_id: string;
+  class_name: string;
+};
+
+export const searchAssignments = async (query: string): Promise<SearchAssignmentResult[]> => {
+  if (!query.trim()) return [];
+  try {
+    const res = await fetch(`${API}/search?search=${encodeURIComponent(query.trim())}`, {
+      headers: authHeader(),
+    });
+    if (!res.ok) return [];
+    const json = await res.json().catch(() => ({ data: [] }));
+    return json.data || [];
+  } catch (e) {
+    console.error("searchAssignments error:", e);
+    return [];
+  }
+};
+
+export type LinkCheckResult = {
+  is_healthy: boolean;
+  status_code: number | null;
+  reason: "healthy" | "restricted" | "not_found" | "timeout" | "network_error" | "invalid_url" | "invalid_domain" | "error_status";
+  message: string;
+  tested_url?: string;
+};
+
+export const checkLinkService = async (url: string): Promise<LinkCheckResult> => {
+  const res = await fetch(`${API}/check-link`, {
+    method: "POST",
+    headers: {
+      ...authHeader(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ url }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "ตรวจสอบลิงก์ไม่สำเร็จ");
+  }
+
+  return await res.json();
 };

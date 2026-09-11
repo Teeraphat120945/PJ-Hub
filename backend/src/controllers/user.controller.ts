@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { db } from "../db";
+import { syncAdminsToClasses } from "./class.controller";
 
 export const getUsers = async (req: Request, res: Response) => {
   const userRole = Number((req as any).user?.role);
@@ -84,6 +85,10 @@ export const updateUserRole = async (req: Request, res: Response) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "ไม่พบผู้ใช้ในระบบ" });
+    }
+
+    if (role_flg === 0) {
+      await syncAdminsToClasses(conn);
     }
 
     res.json({ message: "แก้ไขสิทธิ์ผู้ใช้เรียบร้อย" });

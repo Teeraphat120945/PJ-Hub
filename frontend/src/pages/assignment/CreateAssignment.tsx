@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   FiPlusSquare,
@@ -33,9 +33,11 @@ const WORK_TYPES = [
 
 const CreateAssignment = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const preselectedClassId = (location.state as any)?.class_id || "";
 
   const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClass, setSelectedClass] = useState(preselectedClassId);
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
   const [files, setFiles] = useState<File[]>([]);

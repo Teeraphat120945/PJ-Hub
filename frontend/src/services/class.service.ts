@@ -18,12 +18,16 @@ export type Class = {
   class_describe?: string;
   created_by?: string;
   created_datetime?: string;
+  is_responsible?: boolean;
+  is_enrolled?: boolean;
+  matched_types?: string;
 };
 
-type TeacherClassItem = {
+export type TeacherClassItem = {
   class_id: string;
   class_name: string;
   assignment_count: number;
+  created_datetime?: string;
 };
 
 export const createClass = async (

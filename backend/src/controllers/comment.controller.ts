@@ -173,7 +173,7 @@ export const deleteComment = async (req: Request, res: Response) => {
 
     const [rows]: any = await db.query(
       `
-      SELECT ac.user_id AS comment_author, a.created_by AS assignment_owner, c.created_by AS class_owner
+      SELECT ac.user_id AS comment_author, a.created_by AS assignment_owner, c.created_by AS class_owner, a.class_id
       FROM assignment_comments ac
       INNER JOIN class_assignments a ON a.assignment_id = ac.assignment_id
       LEFT JOIN classes c ON c.class_id = a.class_id
@@ -191,7 +191,18 @@ export const deleteComment = async (req: Request, res: Response) => {
     const isClassOwner = String(target.class_owner) === String(userId);
     const isAdmin = Number(userRole) === 0;
 
-    if (!isAuthor && !isClassOwner && !isAdmin) {
+    let isEnrolledInstructor = false;
+    if (!isAuthor && !isClassOwner && !isAdmin && userId) {
+      const [instructorRows]: any = await db.query(
+        `SELECT 1 FROM class_users cu
+         INNER JOIN users u ON u.user_id = cu.user_id
+         WHERE cu.class_id = ? AND cu.user_id = ? AND cu.deleted_flg = 0 AND u.role_flg = 1`,
+        [target.class_id, userId]
+      );
+      isEnrolledInstructor = instructorRows.length > 0;
+    }
+
+    if (!isAuthor && !isClassOwner && !isAdmin && !isEnrolledInstructor) {
       return res.status(403).json({ message: "คุณไม่มีสิทธิ์ลบความคิดเห็นนี้" });
     }
 

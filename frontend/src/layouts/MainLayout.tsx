@@ -11,8 +11,7 @@ import {
   FiLogOut,
   FiUser,
   FiX,
-  FiChevronLeft,
-  FiChevronRight
+  FiMenu
 } from "react-icons/fi";
 import "../css/MainLayout.css";
 
@@ -111,9 +110,21 @@ function MainLayout() {
       <aside className={`sidebar ${isMobileOpen ? "mobile-open" : ""} ${isCollapsed ? "collapsed" : ""}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <div className="up-logo-badge" title="มหาวิทยาลัยพะเยา">UP</div>
+            <button
+              type="button"
+              className="up-logo-btn"
+              onClick={toggleSidebar}
+              title={isCollapsed ? "ขยายแถบเมนู (คลิกที่โลโก้ UP)" : "ย่อแถบเมนู (คลิกที่โลโก้ UP)"}
+              aria-label={isCollapsed ? "ขยายเมนู" : "ย่อเมนู"}
+            >
+              <div className="up-logo-badge">UP</div>
+            </button>
             {!isCollapsed && (
-              <div className="brand-text">
+              <div
+                className="brand-text"
+                onClick={toggleSidebar}
+                title="ย่อแถบเมนู (คลิกที่โลโก้ UP)"
+              >
                 <span className="brand-title">มหาวิทยาลัยพะเยา</span>
                 <span className="brand-subtitle">Classroom Hub</span>
               </div>
@@ -271,16 +282,17 @@ function MainLayout() {
         <header className="header">
           <div className="header-left">
             <button
-              className="toggle-sidebar-btn"
+              type="button"
+              className="mobile-menu-btn"
               onClick={toggleSidebar}
-              title={isCollapsed ? "ขยายเมนูด้านข้าง (Expand Sidebar)" : "ย่อเมนูด้านข้าง (Collapse Sidebar)"}
-              aria-label="Toggle Sidebar"
+              title="เปิดเมนูด้านข้าง"
+              aria-label="Toggle Mobile Menu"
             >
-              {isCollapsed ? <FiChevronRight size={20} /> : <FiChevronLeft size={20} />}
+              <FiMenu size={20} />
             </button>
             <div className="header-brand-mobile">
               <span className="up-header-icon">🏆</span>
-              <span>UP Classroom</span>
+              <span className="header-brand-text">UP Classroom</span>
             </div>
           </div>
 
@@ -298,8 +310,14 @@ function MainLayout() {
                     {getRoleBadge(role).label}
                   </span>
                 </div>
-                <button className="header-logout-btn" onClick={handleLogout}>
-                  <FiLogOut /> ออกจากระบบ
+                <button
+                  className="header-logout-btn"
+                  onClick={handleLogout}
+                  title="ออกจากระบบ"
+                  aria-label="ออกจากระบบ"
+                >
+                  <FiLogOut />
+                  <span className="logout-btn-text">ออกจากระบบ</span>
                 </button>
               </div>
             )}

@@ -6,16 +6,38 @@ export const getClasses = async (req: Request, res: Response) => {
   const user = (req as any).user;
 
   const userId = user?.user_id || user?.id;
+  const tokenRole = Number(user?.role);
   try {
+    let currentRole = tokenRole;
+    if (userId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [userId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
+    if (currentRole === 0) {
+      const [rows] = await conn.query(
+        `SELECT c.class_id, c.class_name
+        FROM classes AS c
+        WHERE c.deleted_flg = 0
+        ORDER BY c.created_datetime DESC`
+      );
+      return res.json({ data: rows || [] });
+    }
+
     const [rows] = await conn.query(
-      `SELECT c.class_id, c.class_name
+      `SELECT DISTINCT c.class_id, c.class_name
       FROM classes AS c
-      LEFT OUTER JOIN class_users AS cu ON cu.class_id = c.class_id 
-      WHERE c.deleted_flg = 0 AND cu.deleted_flg = 0 AND cu.user_id = ?
+      LEFT OUTER JOIN class_users AS cu ON cu.class_id = c.class_id AND cu.deleted_flg = 0 AND cu.user_id = ?
+      WHERE c.deleted_flg = 0 AND (cu.user_id IS NOT NULL OR c.created_by = ?)
       ORDER BY c.created_datetime DESC`,
-      [userId]
+      [userId, userId]
     );
-    res.json({ data: rows });
+    res.json({ data: rows || [] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "database error" });
