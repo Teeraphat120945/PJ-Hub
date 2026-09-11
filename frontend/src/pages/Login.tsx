@@ -53,9 +53,9 @@ function Login() {
       localStorage.setItem("role_flg", String(role || 3));
 
       toast.success(`เข้าสู่ระบบด้วย ${provider} สำเร็จ`);
-      navigate("/", { replace: true });
+      window.location.href = "/";
     }
-  }, [searchParams, navigate]);
+  }, [searchParams]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

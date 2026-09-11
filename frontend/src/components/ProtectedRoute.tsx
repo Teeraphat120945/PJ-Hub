@@ -58,7 +58,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   } else {
     // กรณีหน้าสำหรับผู้ที่ยังไม่ล็อกอิน เช่น /login หรือ /register
-    if (token) {
+    // หากกำลัง redirect กลับมาจาก OAuth (มี query token หรือ oauth) ให้ยอมผ่านเข้าหน้า Login เพื่อบันทึก Token ก่อน
+    const searchParams = new URLSearchParams(location.search);
+    const isOAuthCallback = searchParams.has("token") || searchParams.has("oauth");
+
+    if (token && !isOAuthCallback) {
       return <Navigate to="/" replace />;
     }
   }

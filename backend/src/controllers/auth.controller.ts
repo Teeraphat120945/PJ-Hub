@@ -5,10 +5,10 @@ import type { RowDataPacket } from "mysql2";
 import { db } from "../db";
 
 const FRONTEND_URL =
-  process.env.FRONTEND_URL || "http://localhost:5173";
+  (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
 
 const BACKEND_URL =
-  process.env.BACKEND_URL || "http://localhost:3000";
+  (process.env.BACKEND_URL || "http://localhost:3000").replace(/\/+$/, "");
 
 type OAuthProvider = "google" | "microsoft";
 
