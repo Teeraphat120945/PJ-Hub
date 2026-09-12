@@ -126,6 +126,20 @@ export const view = async (req: Request, res: Response) => {
       }
     }
 
+    if (user_id) {
+      try {
+        const [uRows]: any = await db.execute(
+          "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+          [user_id]
+        );
+        if (uRows.length > 0 && uRows[0].role_flg !== undefined && uRows[0].role_flg !== null) {
+          role = Number(uRows[0].role_flg);
+        }
+      } catch (err) {
+        console.warn("view fetch role error:", err);
+      }
+    }
+
     let rows: any;
 
     if (!search) {
@@ -140,6 +154,7 @@ export const view = async (req: Request, res: Response) => {
               ELSE 0
             END AS is_responsible,
             CASE
+              WHEN ? = 0 THEN 1
               WHEN cu.user_id IS NOT NULL OR c.created_by = ? THEN 1
               ELSE 0
             END AS is_enrolled,
@@ -149,7 +164,7 @@ export const view = async (req: Request, res: Response) => {
           WHERE c.deleted_flg = 0
           ORDER BY c.created_datetime DESC
           `,
-          [role, user_id, role, user_id, user_id],
+          [role, user_id, role, role, user_id, user_id],
         );
       } else {
         [rows] = await db.execute(
@@ -195,6 +210,7 @@ export const view = async (req: Request, res: Response) => {
               ELSE 0
             END AS is_responsible,
             CASE
+              WHEN ? = 0 THEN 1
               WHEN cu.user_id IS NOT NULL OR c.created_by = ? THEN 1
               ELSE 0
             END AS is_enrolled,
@@ -214,7 +230,7 @@ export const view = async (req: Request, res: Response) => {
           GROUP BY c.class_id, c.class_name, c.class_describe, c.created_datetime, c.created_by, cu.user_id
           ORDER BY c.created_datetime DESC
           `,
-          [role, user_id, role, user_id, keyword, keyword, user_id, keyword, keyword, keyword, keyword, keyword, ...yearParams],
+          [role, user_id, role, role, user_id, keyword, keyword, user_id, keyword, keyword, keyword, keyword, keyword, ...yearParams],
         );
       } else {
         const yearCondition = ceYear !== null ? `OR YEAR(c.created_datetime) = ?` : ``;

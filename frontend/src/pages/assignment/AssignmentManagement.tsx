@@ -10,6 +10,10 @@ import {
   FiCalendar,
   FiClock,
   FiShield,
+  FiUser,
+  FiSearch,
+  FiLayers,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { formatThaiYear, calculateExpiryInfo } from "../../utils/dateUtils";
 import {
@@ -24,28 +28,43 @@ type AssignmentItem = {
   class_id: string;
   class_name?: string;
   assignment_name: string;
+  assignment_type?: string;
+  created_by?: string;
+  author_name?: string;
+  author_role?: number;
   created_datetime?: string;
   retention_days?: number;
   expires_at?: string;
   days_remaining?: number;
   is_expired?: boolean;
   is_expiring_soon?: boolean;
+  file_count?: number;
+  assignment_link?: string;
+  has_files?: boolean;
+  has_link?: boolean;
+  has_no_resources?: boolean;
 };
 
 function AssignmentManagement() {
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState<AssignmentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"all" | "mine">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const role = localStorage.getItem("role") || localStorage.getItem("role_flg");
+  const isAdmin = Number(role) === 0;
+  const currentUserId = localStorage.getItem("user_id");
 
   useEffect(() => {
     const loadAssignments = async () => {
       try {
         setLoading(true);
         const data = await getAssignmentByUser();
-        setAssignments(data);
+        setAssignments(data || []);
       } catch (err: any) {
         console.error(err);
-        toast.error(err.message || "โหลดผลงานของคุณไม่สำเร็จ");
+        toast.error(err.message || "โหลดผลงานไม่สำเร็จ");
       } finally {
         setLoading(false);
       }
@@ -70,11 +89,29 @@ function AssignmentManagement() {
     }
   };
 
+  const myAssignments = assignments.filter(
+    (a) => a.created_by && currentUserId && String(a.created_by) === String(currentUserId)
+  );
+
+  const displayedList = isAdmin && activeTab === "mine" ? myAssignments : assignments;
+
+  const filteredAssignments = displayedList.filter((a) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      (a.assignment_name && a.assignment_name.toLowerCase().includes(q)) ||
+      (a.class_id && a.class_id.toLowerCase().includes(q)) ||
+      (a.class_name && a.class_name.toLowerCase().includes(q)) ||
+      (a.author_name && a.author_name.toLowerCase().includes(q)) ||
+      (a.assignment_type && a.assignment_type.toLowerCase().includes(q))
+    );
+  });
+
   if (loading) {
     return (
       <div className="page-container">
         <div className="assignment-management-loading">
-          <p>กำลังโหลดผลงานของคุณ...</p>
+          <p>{isAdmin ? "กำลังโหลดผลงานทั้งหมดในระบบ..." : "กำลังโหลดผลงานของคุณ..."}</p>
         </div>
       </div>
     );
@@ -88,9 +125,13 @@ function AssignmentManagement() {
             <FiFolder size={24} />
           </div>
           <div>
-            <h2 className="page-title">ผลงานของฉัน</h2>
+            <h2 className="page-title">
+              {isAdmin ? "ผลงานทั้งหมดในระบบ (ดูแลระบบ)" : "ผลงานของฉัน"}
+            </h2>
             <p className="page-subtitle">
-              จัดการและตรวจสอบผลงานทั้งหมดที่คุณได้สร้างขึ้น ({assignments.length} ชิ้น)
+              {isAdmin
+                ? `จัดการและตรวจสอบผลงานทั้งหมดในระบบที่คุณมีสิทธิ์กำกับดูแล (${filteredAssignments.length} ชิ้น)`
+                : `จัดการและตรวจสอบผลงานทั้งหมดที่คุณได้สร้างขึ้น (${filteredAssignments.length} ชิ้น)`}
             </p>
           </div>
         </div>
@@ -103,21 +144,84 @@ function AssignmentManagement() {
         </button>
       </div>
 
-      {assignments.length === 0 ? (
+      {isAdmin && (
+        <div className="assignment-admin-toolbar">
+          <div className="assignment-tabs">
+            <button
+              className={`assignment-tab-btn ${activeTab === "all" ? "active" : ""}`}
+              onClick={() => setActiveTab("all")}
+            >
+              <FiLayers size={16} />
+              <span>ผลงานทั้งหมดในระบบ</span>
+              <span className="tab-count-badge">{assignments.length}</span>
+            </button>
+
+            <button
+              className={`assignment-tab-btn ${activeTab === "mine" ? "active" : ""}`}
+              onClick={() => setActiveTab("mine")}
+            >
+              <FiUser size={16} />
+              <span>ผลงานที่ฉันสร้าง</span>
+              <span className="tab-count-badge">{myAssignments.length}</span>
+            </button>
+          </div>
+
+          <div className="assignment-search-box">
+            <FiSearch size={16} className="search-icon" />
+            <input
+              type="text"
+              placeholder="ค้นหาชื่อผลงาน, รหัสวิชา หรือชื่อผู้จัดทำ..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="assignment-search-input"
+            />
+            {searchQuery && (
+              <button
+                className="search-clear-btn"
+                onClick={() => setSearchQuery("")}
+                title="ล้างคำค้นหา"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {filteredAssignments.length === 0 ? (
         <div className="empty-assignment-card">
           <FiFolder size={48} className="empty-icon" />
-          <h3>ยังไม่มีผลงานที่สร้าง</h3>
-          <p>คุณสามารถสร้างผลงานใหม่เพื่อจัดเก็บในคลังการเรียนรู้ได้</p>
-          <button
-            className="btn-primary"
-            onClick={() => navigate("/create-assignment")}
-          >
-            <FiPlusSquare /> สร้างผลงานแรก
-          </button>
+          {searchQuery ? (
+            <>
+              <h3>ไม่พบผลงานที่ตรงกับคำค้นหา</h3>
+              <p>กรุณาลองค้นหาใหม่อีกครั้ง หรือล้างคำค้นหาเพื่อแสดงผลงานทั้งหมด</p>
+              <button
+                className="btn-primary"
+                onClick={() => setSearchQuery("")}
+              >
+                ล้างคำค้นหา
+              </button>
+            </>
+          ) : (
+            <>
+              <h3>{isAdmin ? "ยังไม่มีผลงานในระบบ" : "ยังไม่มีผลงานที่สร้าง"}</h3>
+              <p>
+                {isAdmin
+                  ? "ยังไม่พบผลงานที่ถูกสร้างหรือบันทึกไว้ในระบบ สามารถเพิ่มผลงานใหม่เพื่อเริ่มต้นคลังการเรียนรู้ได้"
+                  : "คุณสามารถสร้างผลงานใหม่เพื่อจัดเก็บในคลังการเรียนรู้ได้"}
+              </p>
+              <button
+                className="btn-primary"
+                onClick={() => navigate("/create-assignment")}
+              >
+                <FiPlusSquare /> สร้างผลงานแรก
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="my-assignment-grid">
-          {assignments.map((a) => {
+          {filteredAssignments.map((a) => {
             const expiry = calculateExpiryInfo(a.created_datetime, a.retention_days || 365);
             return (
               <div
@@ -129,9 +233,19 @@ function AssignmentManagement() {
 
                 <div className="my-assignment-top">
                   <div className="my-assignment-badges">
-                    <span className="class-badge">
+                    <span className="class-badge" title={a.class_name ? `${a.class_id} - ${a.class_name}` : a.class_id}>
                       <FiBookOpen size={13} /> {a.class_id}
                     </span>
+
+                    {a.author_name && (
+                      <span
+                        className="assignment-author-badge"
+                        title={`ผู้จัดทำผลงาน: ${a.author_name}`}
+                      >
+                        <FiUser size={12} />
+                        {a.author_name}
+                      </span>
+                    )}
 
                     {a.created_datetime && (
                       <span
@@ -146,6 +260,15 @@ function AssignmentManagement() {
                     <span className="assignment-permanent-chip" title="ไฟล์แนบจัดเก็บบนระบบ UP PJ-Hub ถาวร">
                       <FiShield size={11} /> จัดเก็บถาวร
                     </span>
+
+                    {a.has_no_resources && (
+                      <span
+                        className="assignment-no-resource-chip"
+                        title="⚠️ ผลงานนี้ยังไม่มีไฟล์แนบและไม่มีลิงก์ภายนอก"
+                      >
+                        <FiAlertTriangle size={11} /> ไม่มีไฟล์/ลิงก์
+                      </span>
+                    )}
 
                     {expiry && (
                       <span
@@ -167,6 +290,12 @@ function AssignmentManagement() {
                   {a.assignment_name}
                 </h3>
 
+                {a.class_name && (
+                  <p className="my-assignment-class-name" title={a.class_name}>
+                    {a.class_name}
+                  </p>
+                )}
+
                 {expiry && (
                   <div className="my-assignment-lifecycle-info">
                     <span className="lifecycle-expiry-date" title={`รอบทบทวนคุณภาพประจำปี: ${expiry.expiryFormatted}`}>
@@ -182,36 +311,36 @@ function AssignmentManagement() {
                   className="my-assignment-actions"
                   onClick={(e) => e.stopPropagation()}
                 >
-                <button
-                  className="btn-action view"
-                  onClick={() => navigate(`/assignment/${a.assignment_id}`)}
-                  title="ดูรายละเอียดผลงาน"
-                >
-                  <FiEye size={15} /> ดูผลงาน
-                </button>
+                  <button
+                    className="btn-action view"
+                    onClick={() => navigate(`/assignment/${a.assignment_id}`)}
+                    title="ดูรายละเอียดผลงาน"
+                  >
+                    <FiEye size={15} /> ดูผลงาน
+                  </button>
 
-                <button
-                  className="btn-action edit"
-                  onClick={() =>
-                    navigate(`/edit-assignment/${a.assignment_id}/edit`)
-                  }
-                  title="แก้ไขผลงาน"
-                >
-                  <FiEdit2 size={15} /> แก้ไข
-                </button>
+                  <button
+                    className="btn-action edit"
+                    onClick={() =>
+                      navigate(`/edit-assignment/${a.assignment_id}/edit`)
+                    }
+                    title="แก้ไขผลงาน"
+                  >
+                    <FiEdit2 size={15} /> แก้ไข
+                  </button>
 
-                <button
-                  className="btn-action delete"
-                  onClick={() => handleDelete(a.assignment_id)}
-                  title="ลบผลงาน"
-                >
-                  <FiTrash2 size={15} />
-                </button>
+                  <button
+                    className="btn-action delete"
+                    onClick={() => handleDelete(a.assignment_id)}
+                    title="ลบผลงาน"
+                  >
+                    <FiTrash2 size={15} />
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

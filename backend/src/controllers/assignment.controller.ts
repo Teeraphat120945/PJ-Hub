@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../db";
 import path from "path";
 import fs from "fs";
+import { syncAdminsToClasses } from "./class.controller";
 
 export const createAssignment = async (req: any, res: Response) => {
   const conn = await db.getConnection();
@@ -12,7 +13,18 @@ export const createAssignment = async (req: any, res: Response) => {
     const userRole = Number(req.user?.role);
     const files = (req.files as Express.Multer.File[]) || [];
 
-    if (userRole !== 0 && userRole !== 1 && userRole !== 2) {
+    let currentRole = userRole;
+    if (userId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [userId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
+    if (currentRole !== 0 && currentRole !== 1 && currentRole !== 2) {
       return res.status(403).json({
         message: "สงวนสิทธิ์การส่งผลงานเฉพาะนิสิตและอาจารย์ในรายวิชาเท่านั้น",
       });
@@ -31,7 +43,7 @@ export const createAssignment = async (req: any, res: Response) => {
       return res.status(404).json({ message: "ไม่พบรายวิชาที่ระบุ" });
     }
 
-    if (userRole !== 0) {
+    if (currentRole !== 0) {
       const isClassCreator = String(classRows[0].created_by) === String(userId);
       const [enrolled]: any = await conn.query(
         "SELECT 1 FROM class_users WHERE class_id = ? AND user_id = ? AND deleted_flg = 0",
@@ -53,7 +65,7 @@ export const createAssignment = async (req: any, res: Response) => {
       (class_id, assignment_type, assignment_name, assignment_detail, assignment_link, created_by, deleted_flg)
       VALUES (?, ?, ?, ?, ?, ?, 0)
       `,
-      [class_id, work_type || "ผลงาน", title.trim(), detail || "", link || null, userId],
+      [class_id, work_type || "ผลงาน", title.trim(), detail || "", link && link.trim() ? link.trim() : null, userId],
     );
 
     const assignmentId = result.insertId;
@@ -190,12 +202,34 @@ export const getAssignment = async (req: any, res: Response) => {
   try {
     const [rows]: any = await conn.query(
       `
-      SELECT * FROM class_assignments WHERE deleted_flg = 0 AND class_id = ? ORDER BY view_cnt DESC, created_datetime DESC 
+      SELECT 
+        ca.*,
+        c.created_by AS class_created_by,
+        COUNT(DISTINCT f.file_id) AS file_count
+      FROM class_assignments ca
+      LEFT JOIN classes c ON c.class_id = ca.class_id
+      LEFT JOIN assignment_files f ON f.assignment_id = ca.assignment_id AND f.deleted_flg = 0
+      WHERE ca.deleted_flg = 0 AND ca.class_id = ? 
+      GROUP BY ca.assignment_id, c.created_by
+      ORDER BY ca.view_cnt DESC, ca.created_datetime DESC 
       `,
       [classId],
     );
 
-    res.json({ data: rows || [] });
+    const formatted = (rows || []).map((row: any) => {
+      const fileCount = Number(row.file_count || 0);
+      const hasFiles = fileCount > 0;
+      const hasLink = Boolean(row.assignment_link && row.assignment_link.trim());
+      return {
+        ...row,
+        file_count: fileCount,
+        has_files: hasFiles,
+        has_link: hasLink,
+        has_no_resources: !hasFiles && !hasLink,
+      };
+    });
+
+    res.json({ data: formatted });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "database error" });
@@ -324,6 +358,14 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
         });
       }
     }
+
+    const hasFiles = assignment.files.length > 0;
+    const hasLink = Boolean(assignment.assignment_link && assignment.assignment_link.trim());
+    (assignment as any).file_count = assignment.files.length;
+    (assignment as any).has_files = hasFiles;
+    (assignment as any).has_link = hasLink;
+    (assignment as any).has_no_resources = !hasFiles && !hasLink;
+
     res.json({ data: assignment });
   } catch (err) {
     console.error(err);
@@ -336,13 +378,141 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
 export const getAssignmentByUser = async (req: any, res: Response) => {
   const conn = await db.getConnection();
   const userId = req.user?.user_id || req.user?.id;
+  const tokenRole = Number(req.user?.role);
+  const onlyMe = req.query.only_me === "true" || req.query.only_me === "1";
+
   try {
-    const [rows]: any = await conn.query(
-      `
-      SELECT assignment_id, class_id, assignment_name, created_datetime FROM class_assignments WHERE deleted_flg = 0 AND created_by = ? ORDER BY created_datetime DESC
-      `,
-      [userId],
-    );
+    let currentRole = tokenRole;
+    if (userId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [userId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
+    let rows: any;
+    if (currentRole === 0) {
+      // ซิงค์สิทธิ์ Admin ทุกคนเข้า class_users ทุกวิชาโดยอัตโนมัติ
+      await syncAdminsToClasses(conn);
+
+      if (!onlyMe) {
+        // สำหรับผู้ดูแลระบบ (Admin): แสดงผลงานทั้งหมดในระบบจากผู้ใช้ทุกคนที่ยังไม่ถูกลบ
+        [rows] = await conn.query(
+          `
+          SELECT 
+            ca.assignment_id, 
+            ca.class_id, 
+            c.class_name,
+            c.created_by AS class_created_by,
+            ca.assignment_name, 
+            ca.assignment_type,
+            ca.assignment_link,
+            ca.created_datetime,
+            ca.created_by,
+            u.user_name AS author_name,
+            u.role_flg AS author_role,
+            COUNT(DISTINCT f.file_id) AS file_count
+          FROM class_assignments ca
+          LEFT JOIN classes c ON c.class_id = ca.class_id
+          LEFT JOIN users u ON u.user_id = ca.created_by
+          LEFT JOIN assignment_files f ON f.assignment_id = ca.assignment_id AND f.deleted_flg = 0
+          WHERE ca.deleted_flg = 0 
+          GROUP BY 
+            ca.assignment_id, 
+            ca.class_id, 
+            c.class_name, 
+            c.created_by,
+            ca.assignment_name, 
+            ca.assignment_type, 
+            ca.assignment_link, 
+            ca.created_datetime, 
+            ca.created_by, 
+            u.user_name, 
+            u.role_flg
+          ORDER BY ca.created_datetime DESC
+          `
+        );
+      } else {
+        // แอดมินเลือกดูเฉพาะผลงานที่ตนเองสร้าง
+        [rows] = await conn.query(
+          `
+          SELECT 
+            ca.assignment_id, 
+            ca.class_id, 
+            c.class_name,
+            c.created_by AS class_created_by,
+            ca.assignment_name, 
+            ca.assignment_type,
+            ca.assignment_link,
+            ca.created_datetime,
+            ca.created_by,
+            u.user_name AS author_name,
+            u.role_flg AS author_role,
+            COUNT(DISTINCT f.file_id) AS file_count
+          FROM class_assignments ca
+          LEFT JOIN classes c ON c.class_id = ca.class_id
+          LEFT JOIN users u ON u.user_id = ca.created_by
+          LEFT JOIN assignment_files f ON f.assignment_id = ca.assignment_id AND f.deleted_flg = 0
+          WHERE ca.deleted_flg = 0 AND ca.created_by = ?
+          GROUP BY 
+            ca.assignment_id, 
+            ca.class_id, 
+            c.class_name, 
+            c.created_by,
+            ca.assignment_name, 
+            ca.assignment_type, 
+            ca.assignment_link, 
+            ca.created_datetime, 
+            ca.created_by, 
+            u.user_name, 
+            u.role_flg
+          ORDER BY ca.created_datetime DESC
+          `,
+          [userId],
+        );
+      }
+    } else {
+      // สำหรับผู้ใช้ทั่วไป (อาจารย์ / นิสิต): แสดงเฉพาะผลงานของตนเอง
+      [rows] = await conn.query(
+        `
+        SELECT 
+          ca.assignment_id, 
+          ca.class_id, 
+          c.class_name,
+          c.created_by AS class_created_by,
+          ca.assignment_name, 
+          ca.assignment_type,
+          ca.assignment_link,
+          ca.created_datetime,
+          ca.created_by,
+          u.user_name AS author_name,
+          u.role_flg AS author_role,
+          COUNT(DISTINCT f.file_id) AS file_count
+        FROM class_assignments ca
+        LEFT JOIN classes c ON c.class_id = ca.class_id
+        LEFT JOIN users u ON u.user_id = ca.created_by
+        LEFT JOIN assignment_files f ON f.assignment_id = ca.assignment_id AND f.deleted_flg = 0
+        WHERE ca.deleted_flg = 0 AND ca.created_by = ?
+        GROUP BY 
+          ca.assignment_id, 
+          ca.class_id, 
+          c.class_name, 
+          c.created_by,
+          ca.assignment_name, 
+          ca.assignment_type, 
+          ca.assignment_link, 
+          ca.created_datetime, 
+          ca.created_by, 
+          u.user_name, 
+          u.role_flg
+        ORDER BY ca.created_datetime DESC
+        `,
+        [userId],
+      );
+    }
 
     const retentionDays = 365;
     const now = Date.now();
@@ -364,8 +534,17 @@ export const getAssignmentByUser = async (req: any, res: Response) => {
         }
       }
 
+      const fileCount = Number(row.file_count || 0);
+      const hasFiles = fileCount > 0;
+      const hasLink = Boolean(row.assignment_link && row.assignment_link.trim());
+      const hasNoResources = !hasFiles && !hasLink;
+
       return {
         ...row,
+        file_count: fileCount,
+        has_files: hasFiles,
+        has_link: hasLink,
+        has_no_resources: hasNoResources,
         retention_days: retentionDays,
         expires_at: expiresAt,
         days_remaining: daysRemaining,
@@ -411,9 +590,20 @@ export const updateAssignment = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "ไม่พบผลงาน" });
     }
 
+    let currentRole = userRole;
+    if (userId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [userId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
     const isOwner = String(assignRows[0].created_by) === String(userId);
     const isClassOwner = String(assignRows[0].class_owner) === String(userId);
-    const isAdmin = userRole === 0;
+    const isAdmin = currentRole === 0;
 
     let isEnrolledInstructor = false;
     if (!isOwner && !isClassOwner && !isAdmin && userId) {
@@ -450,7 +640,7 @@ export const updateAssignment = async (req: Request, res: Response) => {
         updated_datetime = NOW()
       WHERE assignment_id = ? AND deleted_flg = 0
       `,
-      [class_id || null, work_type || null, title.trim(), detail || "", link || null, assignmentId],
+      [class_id || null, work_type || null, title.trim(), detail || "", link && link.trim() ? link.trim() : null, assignmentId],
     );
 
     if (deletedIds.length > 0) {
@@ -516,9 +706,20 @@ export const deleteAssignment = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "ไม่พบผลงาน" });
     }
 
+    let currentRole = userRole;
+    if (userId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [userId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
     const isOwner = String(rows[0].created_by) === String(userId);
     const isClassOwner = String(rows[0].class_owner) === String(userId);
-    const isAdmin = userRole === 0;
+    const isAdmin = currentRole === 0;
 
     let isEnrolledInstructor = false;
     if (!isOwner && !isClassOwner && !isAdmin && userId) {

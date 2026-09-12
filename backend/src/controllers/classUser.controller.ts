@@ -53,7 +53,18 @@ export const getClassUsers = async (req: Request, res: Response) => {
   const requesterRole = Number((req as any).user?.role);
 
   try {
-    if (requesterRole !== 0) {
+    let currentRole = requesterRole;
+    if (requesterId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [requesterId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
+    if (currentRole !== 0) {
       const [classRows]: any = await conn.query(
         "SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0",
         [classId]
@@ -109,8 +120,19 @@ export const addClassUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "ไม่พบรายวิชา" });
     }
 
+    let currentRole = requesterRole;
+    if (requesterId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [requesterId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
     const isCreator = String(classRows[0].created_by) === String(requesterId);
-    const isAdmin = requesterRole === 0;
+    const isAdmin = currentRole === 0;
     if (!isCreator && !isAdmin) {
       return res.status(403).json({
         message: "สงวนสิทธิ์เฉพาะอาจารย์ผู้รับผิดชอบรายวิชาหรือผู้ดูแลระบบเท่านั้น",
@@ -174,8 +196,19 @@ export const removeUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "ไม่พบรายวิชา" });
     }
 
+    let currentRole = requesterRole;
+    if (requesterId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [requesterId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
     const isCreator = String(classRows[0].created_by) === String(requesterId);
-    const isAdmin = requesterRole === 0;
+    const isAdmin = currentRole === 0;
     if (!isCreator && !isAdmin) {
       return res.status(403).json({
         message: "สงวนสิทธิ์เฉพาะอาจารย์ผู้รับผิดชอบรายวิชาหรือผู้ดูแลระบบเท่านั้น",

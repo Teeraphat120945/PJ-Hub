@@ -180,10 +180,12 @@ function MainLayout() {
                     className={`sidebar-link ${isActive("/assignments") ? "active" : ""}`}
                     to="/assignments"
                     onClick={() => setIsMobileOpen(false)}
-                    title="ผลงานของฉัน"
+                    title={role === 0 ? "จัดการผลงานทั้งหมดในระบบ" : "ผลงานของฉัน"}
                   >
                     <FiFolder className="link-icon" />
-                    {!isCollapsed && <span>ผลงานของฉัน</span>}
+                    {!isCollapsed && (
+                      <span>{role === 0 ? "จัดการผลงาน" : "ผลงานของฉัน"}</span>
+                    )}
                   </Link>
                 </li>
               </ul>

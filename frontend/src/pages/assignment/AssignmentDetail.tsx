@@ -83,6 +83,15 @@ const AssignmentDetail = () => {
   const canAccessResources = Boolean(
     assignment?.can_access_resources ?? isStudentOrStaff
   );
+
+  const hasFiles = Boolean(
+    assignment?.has_files ?? (assignment?.files && assignment.files.length > 0)
+  );
+  const hasLink = Boolean(
+    assignment?.has_link ?? (assignment?.assignment_link && assignment.assignment_link.trim().length > 0)
+  );
+  const hasNoResources = Boolean(assignment && !hasFiles && !hasLink);
+
   const [downloadingFileId, setDownloadingFileId] = useState<number | null>(null);
   const [linkCheckResult, setLinkCheckResult] = useState<LinkCheckResult | null>(null);
   const [checkingLink, setCheckingLink] = useState(false);
@@ -342,6 +351,33 @@ const AssignmentDetail = () => {
             {assignment.assignment_detail || "ไม่มีรายละเอียดเพิ่มเติม"}
           </div>
         </div>
+
+        {/* ⚠️ กล่องแจ้งเตือนเมื่อผลงานยังไม่มีไฟล์แนบและไม่มีลิงก์ภายนอก */}
+        {hasNoResources && (
+          <div className={`missing-resources-notice ${!isWorkOwner && !isCourseInstructor ? "visitor" : ""}`}>
+            {isWorkOwner || isCourseInstructor ? (
+              <FiAlertTriangle size={18} className="notice-icon" />
+            ) : (
+              <FiAlertCircle size={18} className="notice-icon" />
+            )}
+            <div className="notice-content">
+              <span className="notice-title">
+                {isWorkOwner
+                  ? "ผลงานนี้ยังไม่มีการแนบไฟล์หรือระบุลิงก์ผลงาน"
+                  : isCourseInstructor
+                  ? "แจ้งเตือนผู้รับผิดชอบรายวิชา: ผลงานนี้ยังไม่มีไฟล์แนบหรือลิงก์ภายนอก"
+                  : "ผลงานนี้ยังไม่มีการแนบไฟล์หรือระบุลิงก์ภายนอก"}
+              </span>
+              <span className="notice-desc">
+                {isWorkOwner
+                  ? "กรุณาคลิกปุ่ม 'แก้ไขผลงาน' เพื่อแนบไฟล์เอกสาร รายงาน หรือระบุลิงก์ เพื่อให้ผลงานมีความสมบูรณ์"
+                  : isCourseInstructor
+                  ? "นิสิตยังไม่ได้แนบไฟล์หรือระบุลิงก์ ท่านสามารถแจ้งเตือนนิสิต หรือช่วยแก้ไขผลงานเพื่อแนบข้อมูลได้"
+                  : "อยู่ระหว่างการจัดเตรียมเนื้อหาโดยผู้จัดทำ"}
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="field margin-top-16">
           <label className="field-label">ไฟล์ประกอบและลิงก์</label>
@@ -603,27 +639,27 @@ const AssignmentDetail = () => {
                 <span className="metric-subtext">{expiryInfo.remainingLabel}</span>
               </div>
 
-              <div className="lifecycle-metric-card permanent-card">
+              <div className={`lifecycle-metric-card permanent-card ${assignment.files.length === 0 ? "card-resource-empty" : ""}`}>
                 <span className="metric-label">
                   <FiShield size={14} /> สถานะไฟล์แนบ
                 </span>
-                <span className="metric-value-sm color-success">
-                  จัดเก็บถาวร
+                <span className={`metric-value-sm ${assignment.files.length > 0 ? "color-success" : "color-warning"}`}>
+                  {assignment.files.length > 0 ? "จัดเก็บถาวร" : "ยังไม่มีไฟล์แนบ"}
                 </span>
                 <span className="metric-subtext">
                   {assignment.files.length > 0
                     ? `ปลอดภัย ${assignment.files.length} ไฟล์ • ไม่มีวันหมดอายุ`
-                    : "ไม่มีไฟล์แนบ • หากเพิ่มจะจัดเก็บถาวร"}
+                    : "⚠️ แนะนำอัปโหลดไฟล์เพื่อจัดเก็บถาวร"}
                 </span>
               </div>
 
-              <div className={`lifecycle-metric-card ${linkCheckResult && !linkCheckResult.is_healthy ? "card-expired" : "link-card"}`}>
+              <div className={`lifecycle-metric-card ${!assignment.assignment_link ? "card-resource-empty" : linkCheckResult && !linkCheckResult.is_healthy ? "card-expired" : "link-card"}`}>
                 <span className="metric-label">
                   <FiExternalLink size={14} /> สถานะลิงก์ผลงาน
                 </span>
                 <span className="metric-value-sm">
                   {!assignment.assignment_link
-                    ? "ไม่มีลิงก์แนบ"
+                    ? "ยังไม่มีลิงก์"
                     : checkingLink
                     ? "กำลังตรวจเช็ค..."
                     : linkCheckResult?.is_healthy
@@ -632,7 +668,7 @@ const AssignmentDetail = () => {
                 </span>
                 <span className="metric-subtext">
                   {!assignment.assignment_link
-                    ? "สามารถเพิ่ม URL ได้ที่หน้าแก้ไข"
+                    ? "⚠️ แนะนำเพิ่ม URL ผลงานที่หน้าแก้ไข"
                     : checkingLink
                     ? "ทดสอบเชื่อมต่อปลายทาง..."
                     : linkCheckResult?.is_healthy

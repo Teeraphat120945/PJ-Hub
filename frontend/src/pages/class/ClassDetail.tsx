@@ -13,6 +13,7 @@ import {
   FiLayers,
   FiPlusSquare,
   FiCalendar,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { fetchClassDetail, formatViewCount, type Class } from "../../services/class.service";
 import { formatThaiYear } from "../../utils/dateUtils";
@@ -30,6 +31,11 @@ type AssignmentCard = {
   created_datetime: string;
   created_by: string;
   view_cnt: number;
+  file_count?: number;
+  assignment_link?: string;
+  has_files?: boolean;
+  has_link?: boolean;
+  has_no_resources?: boolean;
 };
 
 const ITEMS_PER_PAGE = 8;
@@ -235,6 +241,18 @@ const ClassDetail = () => {
                         >
                           <FiCalendar size={12} />
                           {formatThaiYear(a.created_datetime)}
+                        </span>
+                      )}
+                      {a.has_no_resources && (isClassResponsible || isAssignmentOwner) && (
+                        <span
+                          className="assignment-no-resource-tag"
+                          title={
+                            isAssignmentOwner
+                              ? "⚠️ ผลงานของคุณยังไม่มีไฟล์แนบหรือลิงก์ภายนอก"
+                              : "⚠️ แจ้งเตือนผู้รับผิดชอบรายวิชา: นิสิตยังไม่ได้แนบไฟล์หรือลิงก์ภายนอก"
+                          }
+                        >
+                          <FiAlertTriangle size={11} /> ไม่มีไฟล์/ลิงก์
                         </span>
                       )}
                     </div>

@@ -55,8 +55,9 @@ function AssignmentEdit() {
         const isOwner = String(res.created_by) === String(currentUserId);
         const isClassOwner = String(res.class_created_by) === String(currentUserId);
         const isAdmin = currentRole === 0;
+        const canEdit = Boolean(res.can_edit ?? (isOwner || isClassOwner || isAdmin || res.is_class_responsible));
 
-        if (!isOwner && !isClassOwner && !isAdmin) {
+        if (!canEdit) {
           toast.error("คุณไม่มีสิทธิ์แก้ไขผลงานนี้");
           navigate(`/assignment/${assignment_id}`, { replace: true });
           return;

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { RowDataPacket } from "mysql2";
 import { db } from "../db";
+import { syncAdminsToClasses } from "./class.controller";
 
 const FRONTEND_URL =
   (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
@@ -136,6 +137,10 @@ export const linkOrCreateOAuthUser = async (profile: {
         [user.user_id]
       );
 
+      if (Number(user.role_flg) === 0) {
+        await syncAdminsToClasses(conn);
+      }
+
       const token = createUserToken(user);
 
       return {
@@ -205,6 +210,10 @@ export const linkOrCreateOAuthUser = async (profile: {
           `,
           [user.user_id]
         );
+
+        if (Number(user.role_flg) === 0) {
+          await syncAdminsToClasses(conn);
+        }
 
         await conn.commit();
       } catch (error) {
@@ -631,6 +640,10 @@ export const login = async (
       `,
       [user.user_id]
     );
+
+    if (Number(user.role_flg) === 0) {
+      await syncAdminsToClasses(conn);
+    }
 
     const token = createUserToken(user);
 

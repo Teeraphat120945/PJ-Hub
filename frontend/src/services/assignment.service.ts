@@ -46,6 +46,10 @@ export type Assignment = {
   days_remaining?: number;
   is_expired?: boolean;
   is_expiring_soon?: boolean;
+  file_count?: number;
+  has_files?: boolean;
+  has_link?: boolean;
+  has_no_resources?: boolean;
 };
 
 export type UpdateAssignmentPayload = Assignment & {
@@ -153,8 +157,9 @@ export const downloadAssignmentFile = async (fileId: number, fileName?: string) 
   window.URL.revokeObjectURL(url);
 };
 
-export const getAssignmentByUser = async () => {
-  const res = await fetch(`${API}/get-assignment-by-user`, {
+export const getAssignmentByUser = async (onlyMe?: boolean) => {
+  const query = onlyMe ? "?only_me=true" : "";
+  const res = await fetch(`${API}/get-assignment-by-user${query}`, {
     method: "GET",
     headers: authHeader(),
   });
