@@ -43,9 +43,9 @@
 .class-card {
   position: relative;
   background: #ffffff;
-  border-radius: var(--radius-lg);
-  padding: 26px 24px;
-  border: 1px solid rgba(88, 44, 131, 0.12);
+  border-radius: var(--radius-xl);
+  padding: 28px 26px;
+  border: 1.5px solid rgba(88, 44, 131, 0.08);
   box-shadow: var(--shadow-md);
   margin-bottom: 28px;
   overflow: hidden;
@@ -127,24 +127,27 @@
 .edit-btn {
   background: var(--up-purple-tint);
   color: var(--up-purple-primary);
-  border: 1px solid rgba(88, 44, 131, 0.2);
-  padding: 8px 16px;
-  min-height: 38px;
+  border: 1.5px solid rgba(88, 44, 131, 0.15);
+  padding: 8px 18px;
+  min-height: 40px;
   border-radius: var(--radius-md);
-  font-weight: 600;
-  font-size: 0.88rem;
+  font-weight: 700;
+  font-size: 0.87rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   transition: var(--transition-fast);
   white-space: nowrap;
+  letter-spacing: 0.1px;
 }
 
 .edit-btn:hover {
-  background: var(--up-purple-primary);
+  background: linear-gradient(135deg, var(--up-purple-primary), var(--up-purple-medium));
   color: #ffffff;
-  transform: translateY(-1px);
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(88, 44, 131, 0.25);
 }
 
 .class-card-body {
@@ -203,22 +206,25 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 18px;
-  background: var(--up-purple-primary);
+  padding: 9px 20px;
+  background: linear-gradient(135deg, var(--up-purple-primary), var(--up-purple-medium));
   color: #ffffff;
   border: none;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease;
+  transition: var(--transition-fast);
+  box-shadow: 0 4px 14px rgba(88, 44, 131, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
   flex-shrink: 0;
   white-space: nowrap;
+  letter-spacing: 0.1px;
 }
 
 .btn-add-assignment:hover {
-  background: var(--up-purple-deep, #4f1f8a);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, var(--up-purple-medium), var(--up-purple-light));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(88, 44, 131, 0.35);
 }
 
 .btn-add-assignment-empty {
@@ -311,23 +317,37 @@
 
 .assignment-card {
   background: #ffffff;
-  border-radius: var(--radius-md);
-  padding: 18px;
-  border: 1px solid rgba(88, 44, 131, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  border: 1.5px solid rgba(88, 44, 131, 0.08);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: var(--transition-normal);
   width: 100%;
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.assignment-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--up-purple-primary), var(--up-purple-soft), var(--up-gold-primary));
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .assignment-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: rgba(88, 44, 131, 0.25);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(88, 44, 131, 0.2);
 }
+
+.assignment-card:hover::before { opacity: 1; }
 
 .assignment-card-header {
   display: flex;

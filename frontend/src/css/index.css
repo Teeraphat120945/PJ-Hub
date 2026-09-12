@@ -1,19 +1,25 @@
-/* University of Phayao (UP) - Responsive Design System & Global Styles */
+/* University of Phayao (UP) — Global Design System v2.0 */
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   /* Brand Typography */
   --font-primary: 'Prompt', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  
+
   /* University of Phayao Purple Brand Palette */
-  --up-purple-deep: #3b145a;     /* Deepest Phayao Violet */
-  --up-purple-dark: #4a1b6d;     /* Main Dark Purple */
-  --up-purple-primary: #582c83;  /* Official UP Phayao Purple */
-  --up-purple-medium: #6b238f;   /* Vibrant Medium Purple */
-  --up-purple-light: #7e22ce;    /* Bright Accent Purple */
-  --up-purple-bright: #9333ea;   /* Highlight Violet */
-  --up-purple-soft: #c084fc;     /* Soft Pastel Violet */
-  --up-purple-tint: #f3e8ff;     /* Background Tint */
-  --up-purple-bg: #f8f5fc;       /* App Workspace BG */
+  --up-purple-deep: #3b145a;
+  --up-purple-dark: #4a1b6d;
+  --up-purple-primary: #582c83;
+  --up-purple-medium: #6b238f;
+  --up-purple-light: #7e22ce;
+  --up-purple-bright: #9333ea;
+  --up-purple-soft: #c084fc;
+  --up-purple-tint: #f3e8ff;
+  --up-purple-bg: #f7f4fc;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.45);
+  --glass-shadow: 0 8px 32px rgba(88, 44, 131, 0.12), 0 2px 8px rgba(0,0,0,0.06);
 
   /* UP Accent Gold / Amber */
   --up-gold-primary: #f59e0b;
@@ -26,8 +32,8 @@
   --color-text-muted: #64748b;
   --color-text-light: #94a3b8;
   --color-bg-surface: #ffffff;
-  --color-border: #e2e8f0;
-  --color-border-hover: #cbd5e1;
+  --color-border: #e8e0f0;
+  --color-border-hover: #c4b5d4;
 
   /* Semantic Feedback Colors */
   --color-danger: #ef4444;
@@ -37,19 +43,24 @@
   --color-warning: #f59e0b;
   --color-info: #3b82f6;
 
-  /* Elevation Shadows */
-  --shadow-sm: 0 1px 3px rgba(88, 44, 131, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 14px -2px rgba(88, 44, 131, 0.09), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 12px 28px -4px rgba(88, 44, 131, 0.14), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 36px -8px rgba(88, 44, 131, 0.2);
+  /* Premium Elevation Shadows */
+  --shadow-xs: 0 1px 2px rgba(88, 44, 131, 0.04);
+  --shadow-sm: 0 2px 8px rgba(88, 44, 131, 0.07), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-md: 0 6px 20px rgba(88, 44, 131, 0.10), 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-lg: 0 16px 40px rgba(88, 44, 131, 0.13), 0 4px 12px rgba(0,0,0,0.05);
+  --shadow-xl: 0 24px 56px rgba(88, 44, 131, 0.18), 0 8px 20px rgba(0,0,0,0.06);
+  --shadow-glow: 0 0 0 3px rgba(88, 44, 131, 0.18);
+  --shadow-gold-glow: 0 0 0 3px rgba(245, 158, 11, 0.22);
 
   /* Radius System */
+  --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
-  /* Layering & Z-Index Standardization */
+  /* Z-Index System */
   --z-base: 1;
   --z-sticky: 100;
   --z-dropdown: 150;
@@ -61,6 +72,8 @@
   /* Transitions */
   --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-bounce: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 *, *::before, *::after {
@@ -77,9 +90,9 @@ body {
   padding: 0;
   min-height: 100vh;
   font-family: var(--font-primary);
-  background-color: var(--up-purple-bg);
+  background: var(--up-purple-bg);
   color: var(--color-text-main);
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
@@ -87,34 +100,25 @@ body {
   width: 100%;
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
+/* Premium Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #c084fc;
+  background: linear-gradient(180deg, var(--up-purple-soft), var(--up-purple-primary));
   border-radius: 999px;
 }
-
-::-webkit-scrollbar-thumb:hover {
-  background: #9333ea;
-}
+::-webkit-scrollbar-thumb:hover { background: var(--up-purple-medium); }
 
 /* Base Typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-primary);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-main);
   margin-top: 0;
   line-height: 1.25;
   word-break: break-word;
   overflow-wrap: anywhere;
+  letter-spacing: -0.3px;
 }
 
 a {
@@ -124,20 +128,18 @@ a {
   word-break: break-word;
 }
 
-a:hover {
-  color: var(--up-purple-light);
-}
+a:hover { color: var(--up-purple-light); }
 
 p, span, div, label {
   word-break: normal;
   overflow-wrap: break-word;
 }
 
-/* Global Button Base with Touch Optimization */
+/* Global Button Base */
 button {
   font-family: var(--font-primary);
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.93rem;
+  font-weight: 600;
   border-radius: var(--radius-md);
   border: none;
   outline: none;
@@ -145,30 +147,29 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   padding: 10px 18px;
   min-height: 42px;
   transition: var(--transition-fast);
   touch-action: manipulation;
   user-select: none;
   white-space: nowrap;
+  letter-spacing: 0.1px;
 }
 
-button:active {
-  transform: translateY(1px);
-}
+button:active { transform: translateY(1px) scale(0.99); }
+button:focus-visible { outline: 2px solid var(--up-purple-soft); outline-offset: 2px; }
 
-/* Primary Button Styling */
+/* Primary Button */
 .btn-primary {
-  background: linear-gradient(135deg, var(--up-purple-primary), var(--up-purple-medium));
+  background: linear-gradient(135deg, var(--up-purple-primary) 0%, var(--up-purple-medium) 100%);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(88, 44, 131, 0.25);
+  box-shadow: 0 4px 16px rgba(88, 44, 131, 0.28), inset 0 1px 0 rgba(255,255,255,0.15);
 }
-
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--up-purple-medium), var(--up-purple-light));
-  box-shadow: 0 6px 18px rgba(88, 44, 131, 0.35);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, var(--up-purple-medium) 0%, var(--up-purple-light) 100%);
+  box-shadow: 0 8px 24px rgba(88, 44, 131, 0.38);
+  transform: translateY(-2px);
 }
 
 /* Secondary Button */
@@ -176,11 +177,13 @@ button:active {
   background: var(--up-purple-tint);
   color: var(--up-purple-primary);
   font-weight: 600;
+  border: 1px solid rgba(88, 44, 131, 0.18);
 }
-
 .btn-secondary:hover {
   background: #e9d5ff;
   color: var(--up-purple-dark);
+  border-color: rgba(88, 44, 131, 0.3);
+  transform: translateY(-1px);
 }
 
 /* Form Input Defaults */
@@ -189,7 +192,7 @@ input, textarea, select {
   font-size: 0.95rem;
   color: var(--color-text-main);
   background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 10px 14px;
   min-height: 44px;
@@ -201,10 +204,16 @@ input, textarea, select {
 input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: var(--up-purple-medium);
-  box-shadow: 0 0 0 3.5px rgba(107, 35, 143, 0.15);
+  box-shadow: 0 0 0 4px rgba(107, 35, 143, 0.12);
+  background: #fff;
 }
 
-/* Form Grid Utilities - Responsive System */
+input::placeholder, textarea::placeholder {
+  color: var(--color-text-light);
+  font-weight: 400;
+}
+
+/* Form Grid Utilities */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -230,14 +239,10 @@ input:focus, textarea:focus, select:focus {
   .grid-6, .grid-5, .grid-4, .grid-3, .grid-2 {
     grid-column: span 12 !important;
   }
-
-  /* Prevent auto-zooming on iPhone/iPad Safari */
-  input, textarea, select {
-    font-size: 16px !important;
-  }
+  input, textarea, select { font-size: 16px !important; }
 }
 
-/* Touch & Smooth Table Wrapper Utilities */
+/* Table Responsive */
 .table-responsive-container {
   width: 100%;
   overflow-x: auto;
@@ -247,8 +252,4 @@ input:focus, textarea:focus, select:focus {
   background: var(--color-bg-surface);
 }
 
-/* Common Responsive Touch Hit Target */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
+.touch-target { min-height: 44px; min-width: 44px; }

@@ -14,12 +14,21 @@
   background: #ffffff;
   width: 100%;
   max-width: 740px;
-  padding: 36px 32px;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(88, 44, 131, 0.12);
+  padding: 38px 34px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid rgba(88, 44, 131, 0.08);
   box-sizing: border-box;
   margin-bottom: 30px;
+  overflow: hidden;
+}
+
+.edit-class-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3.5px;
+  background: linear-gradient(90deg, var(--up-purple-primary), var(--up-purple-soft), var(--up-gold-primary));
 }
 
 /* Back Button */
@@ -29,7 +38,7 @@
   gap: 8px;
   background: var(--up-purple-tint);
   color: var(--up-purple-primary);
-  border: 1px solid rgba(88, 44, 131, 0.15);
+  border: 1.5px solid rgba(88, 44, 131, 0.12);
   padding: 7px 16px;
   min-height: 36px;
   border-radius: var(--radius-md);
@@ -43,7 +52,8 @@
 .back-btn:hover {
   background: var(--up-purple-primary);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(88, 44, 131, 0.2);
+  box-shadow: 0 4px 14px rgba(88, 44, 131, 0.25);
+  transform: translateX(-2px);
 }
 
 /* Card Header */
