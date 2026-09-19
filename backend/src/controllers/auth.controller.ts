@@ -128,14 +128,45 @@ export const linkOrCreateOAuthUser = async (profile: {
     if (providerUsers.length > 0) {
       const user = providerUsers[0];
 
-      await conn.query(
-        `
-          UPDATE users
-          SET last_login = NOW()
-          WHERE user_id = ?
-        `,
-        [user.user_id]
-      );
+      /*
+        Sync email จาก OAuth provider ทุกครั้งที่ login
+        เพื่อให้ email ใน DB ตรงกับ provider เสมอ
+        และป้องกันการใช้ email เก่าที่ถูกเปลี่ยนใน DB โดยตรง
+      */
+      if (
+        email &&
+        user.email &&
+        email.toLowerCase() !== user.email.toLowerCase()
+      ) {
+        await conn.query(
+          `
+            UPDATE users
+            SET email = ?, last_login = NOW()
+            WHERE user_id = ?
+          `,
+          [email, user.user_id]
+        );
+
+        await conn.query(
+          `
+            UPDATE user_auth_providers
+            SET provider_email = ?
+            WHERE user_id = ? AND provider = ? AND provider_user_id = ?
+          `,
+          [email, user.user_id, profile.provider, profile.providerId]
+        );
+
+        user.email = email;
+      } else {
+        await conn.query(
+          `
+            UPDATE users
+            SET last_login = NOW()
+            WHERE user_id = ?
+          `,
+          [user.user_id]
+        );
+      }
 
       if (Number(user.role_flg) === 0) {
         await syncAdminsToClasses(conn);
@@ -374,6 +405,40 @@ export const linkOrCreateOAuthUser = async (profile: {
 };
 
 /* =========================================================
+   VALIDATION HELPERS (server-side, mirrors frontend utils)
+========================================================= */
+
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+const USERNAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+const CONSECUTIVE_SPECIAL_REGEX = /[._-]{2,}/;
+
+function validateBackendUsername(username: string): string | null {
+  if (!username) return "กรุณาระบุชื่อผู้ใช้";
+  if (username.length < 3) return "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร";
+  if (username.length > 30) return "ชื่อผู้ใช้ยาวเกินไป (สูงสุด 30 ตัวอักษร)";
+  if (!USERNAME_REGEX.test(username)) return "ชื่อผู้ใช้ใช้ได้เฉพาะ a-z, A-Z, 0-9 และ . _ -";
+  if (/^[._-]/.test(username) || /[._-]$/.test(username)) return "ชื่อผู้ใช้ห้ามขึ้นต้นหรือลงท้ายด้วย . _ -";
+  if (CONSECUTIVE_SPECIAL_REGEX.test(username)) return "ชื่อผู้ใช้ห้ามมีอักขระพิเศษติดกัน";
+  return null;
+}
+
+function validateBackendEmail(email: string): string | null {
+  if (!email) return "กรุณาระบุอีเมล";
+  if (email.length > 254) return "อีเมลยาวเกินไป (สูงสุด 254 ตัวอักษร)";
+  if (!EMAIL_REGEX.test(email)) return "รูปแบบอีเมลไม่ถูกต้อง";
+  return null;
+}
+
+function validateBackendPassword(password: string): string | null {
+  if (!password) return "กรุณาระบุรหัสผ่าน";
+  if (password.length < 8) return "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
+  if (password.length > 128) return "รหัสผ่านยาวเกินไป (สูงสุด 128 ตัวอักษร)";
+  if (!/[A-Z]/.test(password)) return "รหัสผ่านต้องมีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว (A-Z)";
+  if (!/[0-9]/.test(password)) return "รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว (0-9)";
+  return null;
+}
+
+/* =========================================================
    REGISTER
 ========================================================= */
 
@@ -383,30 +448,42 @@ export const register = async (
 ) => {
   const { username, email, password } = req.body;
 
+  // Type checks
   if (
     typeof username !== "string" ||
     typeof email !== "string" ||
-    typeof password !== "string" ||
-    !username.trim() ||
-    !email.trim() ||
-    !password
+    typeof password !== "string"
   ) {
     return res.status(400).json({
-      message:
-        "กรุณาระบุชื่อผู้ใช้ อีเมล และรหัสผ่าน",
+      message: "ข้อมูลที่ส่งมาไม่ถูกต้อง",
     });
   }
 
   const cleanUsername = username.trim();
-
-  const cleanEmail =
-    email.trim().toLowerCase();
-
+  const cleanEmail = email.trim().toLowerCase();
   /*
     password ไม่ trim
     เพราะ space อาจเป็นส่วนหนึ่งของ password
   */
   const cleanPassword = password;
+
+  // Validate username
+  const usernameErr = validateBackendUsername(cleanUsername);
+  if (usernameErr) {
+    return res.status(400).json({ message: usernameErr });
+  }
+
+  // Validate email
+  const emailErr = validateBackendEmail(cleanEmail);
+  if (emailErr) {
+    return res.status(400).json({ message: emailErr });
+  }
+
+  // Validate password
+  const passwordErr = validateBackendPassword(cleanPassword);
+  if (passwordErr) {
+    return res.status(400).json({ message: passwordErr });
+  }
 
   const conn = await db.getConnection();
 
@@ -567,14 +644,27 @@ export const login = async (
         ? username.trim()
         : "";
 
-  if (
-    !loginKey ||
-    typeof password !== "string" ||
-    !password
-  ) {
+  if (!loginKey) {
     return res.status(400).json({
-      message:
-        "กรุณาระบุอีเมล/ชื่อผู้ใช้ และรหัสผ่าน",
+      message: "กรุณาระบุอีเมล/ชื่อผู้ใช้",
+    });
+  }
+
+  if (loginKey.length < 3 || loginKey.length > 254) {
+    return res.status(400).json({
+      message: "อีเมล/ชื่อผู้ใช้ไม่ถูกต้อง",
+    });
+  }
+
+  if (typeof password !== "string" || !password) {
+    return res.status(400).json({
+      message: "กรุณาระบุรหัสผ่าน",
+    });
+  }
+
+  if (password.length > 128) {
+    return res.status(400).json({
+      message: "รหัสผ่านไม่ถูกต้อง",
     });
   }
 
@@ -1308,3 +1398,137 @@ export const demoSocialLogin =
       });
     }
   };
+
+/* =========================================================
+   UPDATE EMAIL
+   - ใช้ได้กับทุก user (local + OAuth)
+   - อัปเดตทั้ง users.email และ user_auth_providers.provider_email
+   - คืน token ใหม่ที่มี email ที่อัปเดตแล้ว
+========================================================= */
+
+export const updateEmail = async (
+  req: Request,
+  res: Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const { email } = req.body;
+
+  if (typeof email !== "string" || !email.trim()) {
+    return res.status(400).json({ message: "กรุณาระบุอีเมลใหม่" });
+  }
+
+  const newEmail = email.trim().toLowerCase();
+
+  // ตรวจสอบรูปแบบ email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(newEmail)) {
+    return res.status(400).json({ message: "รูปแบบอีเมลไม่ถูกต้อง" });
+  }
+
+  const userId = req.user.user_id;
+
+  const conn = await db.getConnection();
+
+  try {
+    // ตรวจสอบว่า email ใหม่ซ้ำกับคนอื่นหรือไม่
+    const [duplicateRows] = await conn.query<RowDataPacket[]>(
+      `
+        SELECT user_id
+        FROM users
+        WHERE LOWER(email) = LOWER(?)
+          AND user_id != ?
+          AND deleted_flg = 0
+        LIMIT 1
+      `,
+      [newEmail, userId]
+    );
+
+    if (duplicateRows.length > 0) {
+      return res.status(400).json({
+        message: "อีเมลนี้ถูกใช้งานโดยบัญชีอื่นแล้ว",
+      });
+    }
+
+    // ตรวจสอบว่า email เป็นค่าเดิมหรือไม่
+    const [currentRows] = await conn.query<RowDataPacket[]>(
+      `SELECT email FROM users WHERE user_id = ? AND deleted_flg = 0 LIMIT 1`,
+      [userId]
+    );
+
+    if (currentRows.length === 0) {
+      return res.status(404).json({ message: "ไม่พบบัญชีผู้ใช้" });
+    }
+
+    const currentEmail = currentRows[0].email;
+
+    if (
+      currentEmail &&
+      currentEmail.toLowerCase() === newEmail
+    ) {
+      return res.status(400).json({
+        message: "อีเมลใหม่ต้องไม่ซ้ำกับอีเมลปัจจุบัน",
+      });
+    }
+
+    await conn.beginTransaction();
+
+    try {
+      // อัปเดต email ใน users table
+      await conn.query(
+        `
+          UPDATE users
+          SET email = ?
+          WHERE user_id = ?
+        `,
+        [newEmail, userId]
+      );
+
+      // อัปเดต provider_email ใน user_auth_providers ด้วย
+      // เพื่อให้ OAuth login ครั้งถัดไปยังคง sync ถูกต้อง
+      await conn.query(
+        `
+          UPDATE user_auth_providers
+          SET provider_email = ?
+          WHERE user_id = ?
+        `,
+        [newEmail, userId]
+      );
+
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    }
+
+    // สร้าง token ใหม่ที่มี email ที่อัปเดตแล้ว
+    const newToken = jwt.sign(
+      {
+        user_id: userId,
+        user_name: req.user.user_name,
+        email: newEmail,
+        role: req.user.role,
+      },
+      getJwtSecret(),
+      { expiresIn: "1h" }
+    );
+
+    return res.json({
+      message: "อัปเดตอีเมลเรียบร้อยแล้ว",
+      token: newToken,
+      returnData: {
+        user_id: userId,
+        user_name: req.user.user_name,
+        email: newEmail,
+        role: req.user.role,
+      },
+    });
+  } catch (err: unknown) {
+    console.error("updateEmail error:", err);
+    return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
+  }
+};

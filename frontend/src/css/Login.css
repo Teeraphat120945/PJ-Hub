@@ -365,6 +365,138 @@
 
 .required-star { color: #ef4444; font-weight: 700; }
 
+/* ─── Field Validation States ───────────────────────────── */
+
+.auth-input-wrapper.field-error input {
+  border-color: #ef4444;
+  background: #fff8f8;
+}
+
+.auth-input-wrapper.field-error input:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+}
+
+.auth-input-wrapper.field-error .input-icon {
+  color: #ef4444;
+}
+
+.auth-input-wrapper.field-success input {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.auth-input-wrapper.field-success input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+
+.auth-input-wrapper.field-success .input-icon {
+  color: #10b981;
+}
+
+/* ─── Inline Error / Success Messages ───────────────────── */
+
+.field-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #dc2626;
+  margin-top: 2px;
+  animation: shakeAlert 0.3s ease-out;
+}
+
+.field-success-msg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #059669;
+  margin-top: 2px;
+}
+
+.field-hint {
+  font-size: 0.77rem;
+  color: var(--color-text-light);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* ─── Password Strength Bar ──────────────────────────────── */
+
+.password-strength-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.strength-bar-track {
+  flex: 1;
+  height: 5px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.strength-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease, background-color 0.35s ease;
+  min-width: 4px;
+}
+
+.strength-bar-fill.strength-weak        { background: #ef4444; }
+.strength-bar-fill.strength-medium      { background: #f59e0b; }
+.strength-bar-fill.strength-strong      { background: #10b981; }
+.strength-bar-fill.strength-very-strong { background: #059669; }
+
+.strength-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
+  transition: color 0.3s ease;
+}
+
+/* ─── Password Requirements Checklist ───────────────────── */
+
+.password-requirements {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  background: #f8f7fd;
+  border: 1px solid #e8e2f6;
+  border-radius: var(--radius-md);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 12px;
+}
+
+.password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.79rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.password-requirements li.req-met {
+  color: #059669;
+}
+
+.password-requirements li.req-unmet {
+  color: #9ca3af;
+}
+
+.password-requirements li.req-unmet:last-child {
+  font-style: italic;
+}
+
 /* Demo Modal */
 .demo-modal-overlay {
   position: fixed;

@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { FiUser, FiLock, FiEye, FiEyeOff, FiLogIn, FiArrowLeft, FiMail, FiCheckCircle } from "react-icons/fi";
+import {
+  FiLock, FiEye, FiEyeOff, FiLogIn, FiArrowLeft,
+  FiMail, FiCheckCircle, FiUser
+} from "react-icons/fi";
 import { loginApi, getOAuthUrl, demoSocialLoginApi } from "../services/auth.service";
+import { validateLoginIdentifier, validateLoginPassword } from "../utils/validation";
 import "../css/Login.css";
 
 function Login() {
@@ -11,6 +15,12 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Field-level errors
+  const [identifierError, setIdentifierError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [identifierTouched, setIdentifierTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
 
   const [showDemoModal, setShowDemoModal] = useState<"google" | "microsoft" | null>(null);
   const [demoEmail, setDemoEmail] = useState("");
@@ -57,21 +67,44 @@ function Login() {
     }
   }, [searchParams]);
 
+  // ─── Real-time field handlers ───────────────────────────────────
+
+  const handleIdentifierChange = (value: string) => {
+    setIdentifier(value);
+    if (identifierTouched) {
+      setIdentifierError(validateLoginIdentifier(value).message);
+    }
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (passwordTouched) {
+      setPasswordError(validateLoginPassword(value).message);
+    }
+  };
+
+  // ─── Submit ─────────────────────────────────────────────────────
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
     if (loading) return;
     setError("");
 
-    if (!identifier.trim() || !password.trim()) {
-      setError("กรุณากรอกอีเมล/ชื่อผู้ใช้ และรหัสผ่าน");
-      return;
-    }
+    // Validate all fields
+    const iRes = validateLoginIdentifier(identifier);
+    const pRes = validateLoginPassword(password);
+
+    setIdentifierTouched(true);
+    setPasswordTouched(true);
+    setIdentifierError(iRes.message);
+    setPasswordError(pRes.message);
+
+    if (!iRes.valid || !pRes.valid) return;
 
     setLoading(true);
 
     try {
-      const data = await loginApi(identifier.trim(), password.trim());
+      const data = await loginApi(identifier.trim(), password);
 
       localStorage.setItem(
         "user",
@@ -93,9 +126,8 @@ function Login() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Unknown error");
+        setError("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
       }
-     
     } finally {
       setLoading(false);
     }
@@ -183,22 +215,10 @@ function Login() {
             disabled={loading}
           >
             <svg className="social-icon" viewBox="0 0 24 24" width="20" height="20">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
             </svg>
             <span>เข้าสู่ระบบด้วย Google</span>
           </button>
@@ -223,31 +243,48 @@ function Login() {
           <span>หรือเข้าสู่ระบบด้วยอีเมล / รหัสผ่าน</span>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          {/* Identifier */}
           <div className="auth-input-group">
             <label>อีเมล หรือ ชื่อผู้ใช้งาน</label>
-            <div className="auth-input-wrapper">
+            <div className={`auth-input-wrapper ${identifierTouched ? (identifierError ? "field-error" : "field-success") : ""}`}>
               <FiMail className="input-icon" size={18} />
               <input
+                id="login-identifier"
                 type="text"
                 placeholder="กรอกอีเมล หรือ ชื่อผู้ใช้..."
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                onChange={(e) => handleIdentifierChange(e.target.value)}
+                onBlur={() => {
+                  setIdentifierTouched(true);
+                  setIdentifierError(validateLoginIdentifier(identifier).message);
+                }}
                 autoComplete="username"
+                maxLength={254}
               />
             </div>
+            {identifierTouched && identifierError && (
+              <span className="field-error-msg">{identifierError}</span>
+            )}
           </div>
 
+          {/* Password */}
           <div className="auth-input-group">
             <label>รหัสผ่าน</label>
-            <div className="auth-input-wrapper">
+            <div className={`auth-input-wrapper ${passwordTouched ? (passwordError ? "field-error" : "field-success") : ""}`}>
               <FiLock className="input-icon" size={18} />
               <input
+                id="login-password"
                 type={showPassword ? "text" : "password"}
                 placeholder="กรอกรหัสผ่าน..."
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                onBlur={() => {
+                  setPasswordTouched(true);
+                  setPasswordError(validateLoginPassword(password).message);
+                }}
                 autoComplete="current-password"
+                maxLength={128}
               />
               <button
                 type="button"
@@ -258,6 +295,9 @@ function Login() {
                 {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>
             </div>
+            {passwordTouched && passwordError && (
+              <span className="field-error-msg">{passwordError}</span>
+            )}
           </div>
 
           <button className="login-primary-btn" type="submit" disabled={loading}>

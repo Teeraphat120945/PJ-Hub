@@ -9,6 +9,7 @@ import {
   getMicrosoftAuthUrl,
   microsoftCallback,
   demoSocialLogin,
+  updateEmail,
 } from "../controllers/auth.controller";
 
 import {
@@ -35,6 +36,12 @@ router.get(
   "/profile",
   authMiddleware,
   getProfile
+);
+
+router.put(
+  "/email",
+  authMiddleware,
+  updateEmail
 );
 
 

@@ -1,8 +1,19 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
-import { FiUser, FiLock, FiEye, FiEyeOff, FiUserPlus, FiArrowLeft, FiMail } from "react-icons/fi";
+import {
+  FiUser, FiLock, FiEye, FiEyeOff, FiUserPlus,
+  FiArrowLeft, FiMail, FiCheck, FiX
+} from "react-icons/fi";
 import { registerApi, getOAuthUrl, demoSocialLoginApi } from "../services/auth.service";
+import {
+  validateUsername,
+  validateEmail,
+  validatePassword,
+  validateConfirmPassword,
+  getPasswordStrength,
+  getPasswordRequirements,
+} from "../utils/validation";
 import "../css/Login.css";
 
 function Register() {
@@ -11,8 +22,20 @@ function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Field-level error & touched states
+  const [usernameError, setUsernameError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [confirmTouched, setConfirmTouched] = useState(false);
 
   const [showDemoModal, setShowDemoModal] = useState<"google" | "microsoft" | null>(null);
   const [demoEmail, setDemoEmail] = useState("");
@@ -20,35 +43,77 @@ function Register() {
 
   const navigate = useNavigate();
 
+  // ─── Real-time field handlers ───────────────────────────────────
+
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    if (usernameTouched) {
+      setUsernameError(validateUsername(value).message);
+    }
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (emailTouched) {
+      setEmailError(validateEmail(value).message);
+    }
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (passwordTouched) {
+      setPasswordError(validatePassword(value).message);
+    }
+    // re-validate confirm if already touched
+    if (confirmTouched) {
+      setConfirmPasswordError(validateConfirmPassword(value, confirmPassword).message);
+    }
+  };
+
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+    if (confirmTouched) {
+      setConfirmPasswordError(validateConfirmPassword(password, value).message);
+    }
+  };
+
+  // ─── Submit ─────────────────────────────────────────────────────
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (loading) return;
     setError("");
 
-    if (!username.trim() || !password.trim()) {
-      setError("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");
-      return;
-    }
+    // Validate all fields
+    const uRes = validateUsername(username);
+    const eRes = validateEmail(email);
+    const pRes = validatePassword(password);
+    const cRes = validateConfirmPassword(password, confirmPassword);
 
-    if (password !== confirmPassword) {
-      setError("รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน");
-      return;
-    }
+    setUsernameTouched(true);
+    setEmailTouched(true);
+    setPasswordTouched(true);
+    setConfirmTouched(true);
 
-    if (password.length < 4) {
-      setError("รหัสผ่านควรมีความยาวอย่างน้อย 4 ตัวอักษร");
-      return;
-    }
+    setUsernameError(uRes.message);
+    setEmailError(eRes.message);
+    setPasswordError(pRes.message);
+    setConfirmPasswordError(cRes.message);
+
+    if (!uRes.valid || !eRes.valid || !pRes.valid || !cRes.valid) return;
 
     setLoading(true);
 
     try {
-      const data = await registerApi(username.trim(), email.trim(), password.trim());
+      const data = await registerApi(username.trim(), email.trim(), password);
       toast.success(data.message || "สมัครสมาชิกสำเร็จ");
       navigate("/login");
-    } catch (err: any) {
-      setError(err.message || "สมัครสมาชิกไม่สำเร็จ");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("สมัครสมาชิกไม่สำเร็จ");
+      }
     } finally {
       setLoading(false);
     }
@@ -66,8 +131,12 @@ function Register() {
         setDemoEmail(provider === "google" ? "student.up@gmail.com" : "student@up.ac.th");
         setDemoName(provider === "google" ? "Google User" : "Microsoft User");
       }
-    } catch (err: any) {
-      toast.error(err.message || "ไม่สามารถเชื่อมต่อระบบ Social Login ได้");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("ไม่สามารถเชื่อมต่อระบบ Social Login ได้");
+      }
     } finally {
       setLoading(false);
     }
@@ -98,11 +167,25 @@ function Register() {
       toast.success(data.message || `สมัครและเข้าสู่ระบบด้วย ${showDemoModal} สำเร็จ`);
       setShowDemoModal(null);
       navigate("/", { replace: true });
-    } catch (err: any) {
-      toast.error(err.message || "Social login error");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Social login error");
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  // ─── Password strength ──────────────────────────────────────────
+
+  const strengthResult = getPasswordStrength(password);
+  const requirements = getPasswordRequirements(password);
+
+  const getFieldClass = (touched: boolean, errorMsg: string) => {
+    if (!touched) return "";
+    return errorMsg ? "field-error" : "field-success";
   };
 
   return (
@@ -128,22 +211,10 @@ function Register() {
             disabled={loading}
           >
             <svg className="social-icon" viewBox="0 0 24 24" width="20" height="20">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
             </svg>
             <span>สมัครด้วย Google</span>
           </button>
@@ -168,47 +239,85 @@ function Register() {
           <span>หรือกรอกข้อมูลสมัครสมาชิก</span>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          {/* Username */}
           <div className="auth-input-group">
-            <label>ชื่อผู้ใช้งาน (Username) <span className="required-star">*</span></label>
-            <div className="auth-input-wrapper">
+            <label>
+              ชื่อผู้ใช้งาน (Username) <span className="required-star">*</span>
+            </label>
+            <div className={`auth-input-wrapper ${getFieldClass(usernameTouched, usernameError)}`}>
               <FiUser className="input-icon" size={18} />
               <input
+                id="register-username"
                 type="text"
-                placeholder="กำหนดชื่อผู้ใช้..."
+                placeholder="เช่น john_doe หรือ JohnDoe123"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => handleUsernameChange(e.target.value)}
+                onBlur={() => {
+                  setUsernameTouched(true);
+                  setUsernameError(validateUsername(username).message);
+                }}
                 autoComplete="username"
-                required
+                maxLength={30}
               />
             </div>
+            {usernameTouched && usernameError && (
+              <span className="field-error-msg">{usernameError}</span>
+            )}
+            {usernameTouched && !usernameError && username && (
+              <span className="field-success-msg">ชื่อผู้ใช้งานถูกต้อง</span>
+            )}
+            <span className="field-hint">3–30 ตัวอักษร, ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -</span>
           </div>
 
+          {/* Email */}
           <div className="auth-input-group">
-            <label>อีเมล (Email สำหรับกู้คืน/ผูกบัญชี)</label>
-            <div className="auth-input-wrapper">
+            <label>
+              อีเมล <span className="required-star">*</span>
+            </label>
+            <div className={`auth-input-wrapper ${getFieldClass(emailTouched, emailError)}`}>
               <FiMail className="input-icon" size={18} />
               <input
+                id="register-email"
                 type="email"
                 placeholder="เช่น student@up.ac.th"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                onBlur={() => {
+                  setEmailTouched(true);
+                  setEmailError(validateEmail(email).message);
+                }}
                 autoComplete="email"
+                maxLength={254}
               />
             </div>
+            {emailTouched && emailError && (
+              <span className="field-error-msg">{emailError}</span>
+            )}
+            {emailTouched && !emailError && email && (
+              <span className="field-success-msg">อีเมลถูกต้อง</span>
+            )}
           </div>
 
+          {/* Password */}
           <div className="auth-input-group">
-            <label>รหัสผ่าน (Password) <span className="required-star">*</span></label>
-            <div className="auth-input-wrapper">
+            <label>
+              รหัสผ่าน <span className="required-star">*</span>
+            </label>
+            <div className={`auth-input-wrapper ${getFieldClass(passwordTouched, passwordError)}`}>
               <FiLock className="input-icon" size={18} />
               <input
+                id="register-password"
                 type={showPassword ? "text" : "password"}
                 placeholder="กำหนดรหัสผ่าน..."
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                onBlur={() => {
+                  setPasswordTouched(true);
+                  setPasswordError(validatePassword(password).message);
+                }}
                 autoComplete="new-password"
-                required
+                maxLength={128}
               />
               <button
                 type="button"
@@ -219,21 +328,84 @@ function Register() {
                 {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>
             </div>
+
+            {/* Password Strength Bar */}
+            {password && (
+              <div className="password-strength-wrap">
+                <div className="strength-bar-track">
+                  <div
+                    className={`strength-bar-fill strength-${strengthResult.strength}`}
+                    style={{ width: `${(strengthResult.score / 4) * 100}%` }}
+                  />
+                </div>
+                <span className="strength-label" style={{ color: strengthResult.color }}>
+                  {strengthResult.label}
+                </span>
+              </div>
+            )}
+
+            {/* Password Requirements Checklist */}
+            {(passwordTouched || password) && (
+              <ul className="password-requirements">
+                <li className={requirements.minLength ? "req-met" : "req-unmet"}>
+                  {requirements.minLength ? <FiCheck size={12} /> : <FiX size={12} />}
+                  อย่างน้อย 8 ตัวอักษร
+                </li>
+                <li className={requirements.hasUppercase ? "req-met" : "req-unmet"}>
+                  {requirements.hasUppercase ? <FiCheck size={12} /> : <FiX size={12} />}
+                  ตัวอักษรพิมพ์ใหญ่ (A-Z)
+                </li>
+                <li className={requirements.hasNumber ? "req-met" : "req-unmet"}>
+                  {requirements.hasNumber ? <FiCheck size={12} /> : <FiX size={12} />}
+                  ตัวเลข (0-9)
+                </li>
+                <li className={requirements.hasSpecial ? "req-met" : "req-unmet"}>
+                  {requirements.hasSpecial ? <FiCheck size={12} /> : <FiX size={12} />}
+                  อักขระพิเศษ (!@#$...) — แนะนำ
+                </li>
+              </ul>
+            )}
+
+            {passwordTouched && passwordError && (
+              <span className="field-error-msg">{passwordError}</span>
+            )}
           </div>
 
+          {/* Confirm Password */}
           <div className="auth-input-group">
-            <label>ยืนยันรหัสผ่าน <span className="required-star">*</span></label>
-            <div className="auth-input-wrapper">
+            <label>
+              ยืนยันรหัสผ่าน <span className="required-star">*</span>
+            </label>
+            <div className={`auth-input-wrapper ${getFieldClass(confirmTouched, confirmPasswordError)}`}>
               <FiLock className="input-icon" size={18} />
               <input
-                type={showPassword ? "text" : "password"}
-                placeholder="ยืนยันรหัสผ่านอีกครั้ง..."
+                id="register-confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="กรอกรหัสผ่านอีกครั้ง..."
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                onBlur={() => {
+                  setConfirmTouched(true);
+                  setConfirmPasswordError(validateConfirmPassword(password, confirmPassword).message);
+                }}
                 autoComplete="new-password"
-                required
+                maxLength={128}
               />
+              <button
+                type="button"
+                className="toggle-password-btn"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                title={showConfirmPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+              >
+                {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+              </button>
             </div>
+            {confirmTouched && confirmPasswordError && (
+              <span className="field-error-msg">{confirmPasswordError}</span>
+            )}
+            {confirmTouched && !confirmPasswordError && confirmPassword && (
+              <span className="field-success-msg">รหัสผ่านตรงกัน</span>
+            )}
           </div>
 
           <button className="login-primary-btn" type="submit" disabled={loading}>
@@ -307,5 +479,3 @@ function Register() {
 }
 
 export default Register;
-
-
