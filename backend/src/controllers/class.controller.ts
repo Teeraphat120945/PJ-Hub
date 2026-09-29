@@ -501,6 +501,7 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
           c.class_id,
           c.class_name,
           c.class_describe,
+          c.created_by,
           c.created_datetime,
           COUNT(a.assignment_id) AS assignment_count
         FROM classes c
@@ -512,6 +513,7 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
           c.class_id,
           c.class_name,
           c.class_describe,
+          c.created_by,
           c.created_datetime
         ORDER BY c.created_datetime DESC;
         `
@@ -524,6 +526,7 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
           c.class_id,
           c.class_name,
           c.class_describe,
+          c.created_by,
           c.created_datetime,
           COUNT(a.assignment_id) AS assignment_count
         FROM classes c
@@ -541,6 +544,7 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
           c.class_id,
           c.class_name,
           c.class_describe,
+          c.created_by,
           c.created_datetime
         ORDER BY c.created_datetime DESC;
         `,

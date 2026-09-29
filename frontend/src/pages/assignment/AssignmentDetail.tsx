@@ -28,6 +28,7 @@ import {
 import { formatThaiYear, calculateExpiryInfo } from "../../utils/dateUtils";
 import {
   getAssignmentDetail,
+  getAssignmentPublicDetail,
   downloadAssignmentFile,
   checkLinkService,
   type Assignment,
@@ -91,6 +92,7 @@ const AssignmentDetail = () => {
     assignment?.has_link ?? (assignment?.assignment_link && assignment.assignment_link.trim().length > 0)
   );
   const hasNoResources = Boolean(assignment && !hasFiles && !hasLink);
+  const isPublicView = Boolean(!token || assignment?.is_public_view);
 
   const [downloadingFileId, setDownloadingFileId] = useState<number | null>(null);
   const [linkCheckResult, setLinkCheckResult] = useState<LinkCheckResult | null>(null);
@@ -127,13 +129,30 @@ const AssignmentDetail = () => {
     if (!assignment_id) return;
 
     if (!token) {
-      setLoading(false);
+      // Guest mode: ดึงข้อมูลเบื้องต้นแบบ public
+      fetchPublicData();
       return;
     }
 
     fetchData();
     fetchComments();
   }, [assignment_id, token]);
+
+  const fetchPublicData = async () => {
+    try {
+      setLoading(true);
+      const res = await getAssignmentPublicDetail(assignment_id!);
+      setAssignment({
+        ...res,
+        files: [],
+      });
+    } catch (error) {
+      console.error("โหลดข้อมูลผลงาน (public) ไม่สำเร็จ", error);
+      setAssignment(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -247,20 +266,7 @@ const AssignmentDetail = () => {
     );
   }
 
-  if (!token) {
-    return (
-      <div className="login-required">
-        <div className="login-required-card">
-          <div className="auth-logo-badge">UP</div>
-          <h2>เข้าสู่ระบบเพื่อดูผลงาน</h2>
-          <p>กรุณาเข้าสู่ระบบด้วยบัญชีของคุณเพื่อดูรายละเอียดผลงานและร่วมแสดงความคิดเห็น</p>
-          <button className="btn-primary" onClick={() => navigate("/login")}>
-            <FiLogIn /> ไปหน้าเข้าสู่ระบบ
-          </button>
-        </div>
-      </div>
-    );
-  }
+
 
   if (!assignment) {
     return (
@@ -345,6 +351,30 @@ const AssignmentDetail = () => {
           )}
         </div>
 
+        {/* แสดงชื่อเจ้าของผลงาน และชื่อรายวิชา */}
+        <div className="form-grid margin-top-16">
+          {assignment.author_name && (
+            <div className="field grid-6">
+              <label className="field-label">
+                <FiBookOpen size={15} /> ชื่อเจ้าของผลงาน
+              </label>
+              <div className="readonly-box font-weight-600">
+                {assignment.author_name}
+              </div>
+            </div>
+          )}
+          {assignment.class_name && (
+            <div className="field grid-6">
+              <label className="field-label">
+                <FiBookOpen size={15} /> ชื่อรายวิชา
+              </label>
+              <div className="readonly-box font-weight-600">
+                {assignment.class_name}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="field margin-top-16">
           <label className="field-label">รายละเอียดผลงาน</label>
           <div className="readonly-box multiline">
@@ -352,33 +382,40 @@ const AssignmentDetail = () => {
           </div>
         </div>
 
-        {/* ⚠️ กล่องแจ้งเตือนเมื่อผลงานยังไม่มีไฟล์แนบและไม่มีลิงก์ภายนอก */}
-        {hasNoResources && (
-          <div className={`missing-resources-notice ${!isWorkOwner && !isCourseInstructor ? "visitor" : ""}`}>
-            {isWorkOwner || isCourseInstructor ? (
-              <FiAlertTriangle size={18} className="notice-icon" />
-            ) : (
-              <FiAlertCircle size={18} className="notice-icon" />
-            )}
+        {/* แถบแจ้งเตือนให้ login สำหรับ Guest */}
+        {isPublicView && (
+          <div className="login-required" style={{ marginTop: 20 }}>
+            <div className="login-required-card">
+              <div className="auth-logo-badge">UP</div>
+              <h2>เข้าสู่ระบบเพื่อดูข้อมูลเพิ่มเติม</h2>
+              <p>กรุณาเข้าสู่ระบบด้วยบัญชีของคุณเพื่อดูไฟล์แนบ ลิงก์ผลงาน และร่วมแสดงความคิดเห็น</p>
+              <button className="btn-primary" onClick={() => navigate("/login")}>
+                <FiLogIn /> ไปหน้าเข้าสู่ระบบ
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ⚠️ กล่องแจ้งเตือนเมื่อผลงานยังไม่มีไฟล์แนบและไม่มีลิงก์ภายนอก (เห็นเฉพาะเจ้าของผลงาน หรือ เจ้าของรายวิชา/Admin) */}
+        {!isPublicView && hasNoResources && (isWorkOwner || isCourseInstructor) && (
+          <div className="missing-resources-notice">
+            <FiAlertTriangle size={18} className="notice-icon" />
             <div className="notice-content">
               <span className="notice-title">
                 {isWorkOwner
                   ? "ผลงานนี้ยังไม่มีการแนบไฟล์หรือระบุลิงก์ผลงาน"
-                  : isCourseInstructor
-                  ? "แจ้งเตือนผู้รับผิดชอบรายวิชา: ผลงานนี้ยังไม่มีไฟล์แนบหรือลิงก์ภายนอก"
-                  : "ผลงานนี้ยังไม่มีการแนบไฟล์หรือระบุลิงก์ภายนอก"}
+                  : "แจ้งเตือนผู้รับผิดชอบรายวิชา: ผลงานนี้ยังไม่มีไฟล์แนบหรือลิงก์ภายนอก"}
               </span>
               <span className="notice-desc">
                 {isWorkOwner
                   ? "กรุณาคลิกปุ่ม 'แก้ไขผลงาน' เพื่อแนบไฟล์เอกสาร รายงาน หรือระบุลิงก์ เพื่อให้ผลงานมีความสมบูรณ์"
-                  : isCourseInstructor
-                  ? "นิสิตยังไม่ได้แนบไฟล์หรือระบุลิงก์ ท่านสามารถแจ้งเตือนนิสิต หรือช่วยแก้ไขผลงานเพื่อแนบข้อมูลได้"
-                  : "อยู่ระหว่างการจัดเตรียมเนื้อหาโดยผู้จัดทำ"}
+                  : "นิสิตยังไม่ได้แนบไฟล์หรือระบุลิงก์ ท่านสามารถแจ้งเตือนนิสิต หรือช่วยแก้ไขผลงานเพื่อแนบข้อมูลได้"}
               </span>
             </div>
           </div>
         )}
 
+        {!isPublicView && (
         <div className="field margin-top-16">
           <label className="field-label">ไฟล์ประกอบและลิงก์</label>
           <div className="form-grid">
@@ -524,9 +561,10 @@ const AssignmentDetail = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* แผงข้อมูลการดูแลรักษาและอายุทรัพยากร (เฉพาะเจ้าของผลงานและอาจารย์ผู้รับผิดชอบรายวิชา) */}
-        {(isWorkOwner || isCourseInstructor) && expiryInfo && (
+        {!isPublicView && (isWorkOwner || isCourseInstructor) && expiryInfo && (
           <div className="lifecycle-panel margin-top-20">
             <div className="lifecycle-header">
               <div className="lifecycle-title-group">
@@ -788,6 +826,7 @@ const AssignmentDetail = () => {
         )}
       </div>
 
+      {!isPublicView && (
       <div className="comment-panel">
         <div className="comment-panel-header">
           <FiMessageSquare size={20} className="comment-icon-head" />
@@ -803,9 +842,10 @@ const AssignmentDetail = () => {
             </div>
           ) : (
             comments.map((c) => {
-              const isCommentAuthor = String(c.user_id) === String(currentUserId);
-              const canEdit = isCommentAuthor || Number(role) === 0;
-              const canDelete = isCommentAuthor || isCourseInstructor || Number(role) === 0;
+              const isCommentAuthor = Boolean(token && currentUserId && String(c.user_id) === String(currentUserId));
+              const isAdmin = Boolean(token && userRole === 0);
+              const canEdit = isCommentAuthor || isAdmin;
+              const canDelete = isCommentAuthor || isCourseInstructor || isAdmin;
               const hasMenu = canEdit || canDelete;
 
               return (
@@ -922,6 +962,7 @@ const AssignmentDetail = () => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };

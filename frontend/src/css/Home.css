@@ -628,6 +628,16 @@
   margin: 0;
 }
 
+.assignment-search-author {
+  font-size: 0.82rem;
+  color: var(--up-purple-medium);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 0 0;
+  font-weight: 500;
+}
+
 /* Matched Tag */
 .class-matched-tag-box {
   display: inline-flex;

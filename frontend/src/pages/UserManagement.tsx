@@ -42,7 +42,8 @@ function UserManagement() {
     load();
   }, []);
 
-  const currentRole = Number(localStorage.getItem("role") || localStorage.getItem("role_flg"));
+  const rawRole = localStorage.getItem("role") || localStorage.getItem("role_flg");
+  const currentRole = rawRole !== null && rawRole !== undefined ? Number(rawRole) : null;
   const currentUserId = localStorage.getItem("user_id");
 
   const changeRole = async (user_id: string, role_flg: number) => {

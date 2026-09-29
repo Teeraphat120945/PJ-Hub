@@ -50,6 +50,9 @@ export type Assignment = {
   has_files?: boolean;
   has_link?: boolean;
   has_no_resources?: boolean;
+  author_name?: string;
+  class_name?: string;
+  is_public_view?: boolean;
 };
 
 export type UpdateAssignmentPayload = Assignment & {
@@ -108,6 +111,22 @@ export const getAssignmentDetail = async (
   const res = await fetch(`${API}/get-detail/${assignment_id}`, {
     method: "GET",
     headers: authHeader(),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "ไม่สามารถโหลดรายละเอียดผลงานได้");
+  }
+
+  const json: { data: Assignment } = await res.json();
+  return json.data;
+};
+
+export const getAssignmentPublicDetail = async (
+  assignment_id: string,
+): Promise<Assignment> => {
+  const res = await fetch(`${API}/public-detail/${assignment_id}`, {
+    method: "GET",
   });
 
   if (!res.ok) {
@@ -228,6 +247,7 @@ export type SearchAssignmentResult = {
   view_cnt: number;
   class_id: string;
   class_name: string;
+  author_name?: string;
 };
 
 export const searchAssignments = async (query: string): Promise<SearchAssignmentResult[]> => {

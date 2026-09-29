@@ -51,9 +51,10 @@ function AssignmentEdit() {
         const res = await getAssignmentDetail(assignment_id);
 
         const currentUserId = localStorage.getItem("user_id");
-        const currentRole = Number(localStorage.getItem("role") || localStorage.getItem("role_flg"));
-        const isOwner = String(res.created_by) === String(currentUserId);
-        const isClassOwner = String(res.class_created_by) === String(currentUserId);
+        const rawRole = localStorage.getItem("role") || localStorage.getItem("role_flg");
+        const currentRole = rawRole !== null && rawRole !== undefined ? Number(rawRole) : null;
+        const isOwner = Boolean(currentUserId && String(res.created_by) === String(currentUserId));
+        const isClassOwner = Boolean(currentUserId && String(res.class_created_by) === String(currentUserId));
         const isAdmin = currentRole === 0;
         const canEdit = Boolean(res.can_edit ?? (isOwner || isClassOwner || isAdmin || res.is_class_responsible));
 

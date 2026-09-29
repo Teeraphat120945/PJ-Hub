@@ -256,9 +256,11 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
       `
         SELECT assign.assignment_id, assign.assignment_name, assign.assignment_type, assign.assignment_detail, assign.class_id, assign.assignment_link,
         assign.view_cnt, assign.created_by, assign.created_datetime, files.file_id, files.file_name, files.file_path AS file_url,
-        c.created_by AS class_created_by
+        c.created_by AS class_created_by, c.class_name,
+        u.user_name AS author_name
         FROM class_assignments assign
         LEFT JOIN classes c ON c.class_id = assign.class_id
+        LEFT JOIN users u ON u.user_id = assign.created_by
         LEFT JOIN assignment_files files ON files.assignment_id = assign.assignment_id AND files.deleted_flg = 0
         WHERE assign.deleted_flg = 0 AND assign.assignment_id = ? ;
       `,
@@ -331,6 +333,8 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
       assignment_detail: rows[0].assignment_detail,
       class_id: rows[0].class_id,
       class_created_by: rows[0].class_created_by,
+      class_name: rows[0].class_name,
+      author_name: rows[0].author_name || "ไม่ระบุ",
       assignment_link: isAuthorized ? rows[0].assignment_link : null,
       view_cnt: rows[0].view_cnt,
       created_by: rows[0].created_by,
@@ -369,6 +373,88 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
     res.json({ data: assignment });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: "database error" });
+  } finally {
+    conn.release();
+  }
+};
+
+/**
+ * ดึงข้อมูลเบื้องต้นของผลงาน (Public - ไม่ต้อง login)
+ * แสดงเฉพาะ: ชื่อผลงาน, คำอธิบาย, ชื่อเจ้าของ, ประเภท, รายวิชา, วันที่, ยอดเข้าชม
+ * ซ่อน: ไฟล์แนบ, ลิงก์ผลงาน, สิทธิ์ต่างๆ
+ */
+export const getAssignmentPublicDetail = async (req: Request, res: Response) => {
+  const conn = await db.getConnection();
+  const { assignment_id } = req.params;
+
+  try {
+    // เพิ่มยอดเข้าชม
+    await conn.execute(
+      `UPDATE class_assignments 
+       SET view_cnt = view_cnt + 1 
+       WHERE assignment_id = ?`,
+      [assignment_id]
+    );
+
+    const [rows]: any = await conn.query(
+      `
+        SELECT 
+          assign.assignment_id, 
+          assign.assignment_name, 
+          assign.assignment_type, 
+          assign.assignment_detail, 
+          assign.class_id,
+          assign.view_cnt, 
+          assign.created_by, 
+          assign.created_datetime,
+          u.user_name AS author_name,
+          c.class_name
+        FROM class_assignments assign
+        LEFT JOIN users u ON u.user_id = assign.created_by
+        LEFT JOIN classes c ON c.class_id = assign.class_id
+        WHERE assign.deleted_flg = 0 AND assign.assignment_id = ?
+      `,
+      [assignment_id],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "ไม่พบผลงาน" });
+    }
+
+    const row = rows[0];
+
+    const assignment = {
+      assignment_id: row.assignment_id,
+      assignment_name: row.assignment_name,
+      assignment_type: row.assignment_type,
+      assignment_detail: row.assignment_detail,
+      class_id: row.class_id,
+      class_name: row.class_name,
+      view_cnt: row.view_cnt,
+      created_by: row.created_by,
+      author_name: row.author_name || "ไม่ระบุ",
+      created_datetime: row.created_datetime,
+      // Public mode flags
+      is_public_view: true,
+      can_access_resources: false,
+      is_work_owner: false,
+      is_class_responsible: false,
+      can_comment: false,
+      can_edit: false,
+      can_delete: false,
+      // ซ่อนข้อมูลที่ต้อง login
+      assignment_link: null,
+      files: [],
+      file_count: 0,
+      has_files: false,
+      has_link: false,
+      has_no_resources: false,
+    };
+
+    res.json({ data: assignment });
+  } catch (err) {
+    console.error("getAssignmentPublicDetail error:", err);
     res.status(500).json({ message: "database error" });
   } finally {
     conn.release();
@@ -785,9 +871,11 @@ export const searchAssignments = async (req: Request, res: Response) => {
         a.created_datetime,
         a.view_cnt,
         a.class_id,
-        c.class_name
+        c.class_name,
+        u.user_name AS author_name
       FROM class_assignments a
       INNER JOIN classes c ON c.class_id = a.class_id AND c.deleted_flg = 0
+      LEFT JOIN users u ON u.user_id = a.created_by
       WHERE a.deleted_flg = 0
         AND (
           a.assignment_name LIKE ?

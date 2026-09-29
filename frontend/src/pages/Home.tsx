@@ -24,6 +24,7 @@ import {
   FiTag,
   FiLayers,
   FiEye,
+  FiUser,
 } from "react-icons/fi";
 import { formatThaiYear } from "../utils/dateUtils";
 import "../css/Home.css";
@@ -213,6 +214,11 @@ function Home() {
                   {item.assignment_detail && (
                     <p className="assignment-search-describe">
                       {item.assignment_detail}
+                    </p>
+                  )}
+                  {item.author_name && (
+                    <p className="assignment-search-author">
+                      <FiUser size={13} /> โดย: {item.author_name}
                     </p>
                   )}
                 </div>

@@ -53,7 +53,7 @@ function AssignmentManagement() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const role = localStorage.getItem("role") || localStorage.getItem("role_flg");
-  const isAdmin = Number(role) === 0;
+  const isAdmin = role !== null && Number(role) === 0;
   const currentUserId = localStorage.getItem("user_id");
 
   useEffect(() => {

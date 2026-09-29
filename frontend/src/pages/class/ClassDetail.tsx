@@ -49,8 +49,20 @@ const ClassDetail = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  const token = localStorage.getItem("token");
   const currentUserId = localStorage.getItem("user_id");
-  const currentRole = Number(localStorage.getItem("role") || localStorage.getItem("role_flg"));
+  const rawRole = localStorage.getItem("role") || localStorage.getItem("role_flg");
+  const currentRole = token && rawRole !== null && rawRole !== undefined ? Number(rawRole) : null;
+  const isAdmin = currentRole === 0;
+
+  // ตรวจสอบว่าเป็นเจ้าของรายวิชา (ผู้รับผิดชอบรายวิชา) หรือผู้ดูแลระบบ (Admin) หรือไม่
+  const isClassResponsible = Boolean(
+    token && (
+      isAdmin ||
+      classDetail?.is_responsible ||
+      (classDetail?.created_by && currentUserId && String(classDetail.created_by) === String(currentUserId))
+    )
+  );
 
   useEffect(() => {
     if (!class_id) return;
@@ -145,7 +157,7 @@ const ClassDetail = () => {
             <h2 className="class-title-text">{classDetail.class_name}</h2>
           </div>
 
-          {(currentRole === 0 || (currentRole === 1 && (Boolean(classDetail.is_responsible) || (classDetail.created_by && String(classDetail.created_by) === String(currentUserId))))) && (
+          {token && (isAdmin || (currentRole === 1 && isClassResponsible)) && (
             <button
               className="edit-btn"
               onClick={() => navigate(`/class/${class_id}/edit`)}
@@ -183,8 +195,8 @@ const ClassDetail = () => {
             </div>
           </div>
 
-          {(currentRole === 0 || currentRole === 1 || currentRole === 2) &&
-            (classDetail.is_enrolled || classDetail.is_responsible || currentRole === 0) && (
+          {token && (currentRole === 0 || currentRole === 1 || currentRole === 2) &&
+            (classDetail.is_enrolled || classDetail.is_responsible || isAdmin) && (
             <button
               className="btn-add-assignment"
               onClick={() => navigate("/create-assignment", { state: { class_id } })}
@@ -200,8 +212,8 @@ const ClassDetail = () => {
             <FiLayers size={42} className="empty-icon" />
             <h4>ยังไม่มีผลงานในรายวิชานี้</h4>
             <p>นิสิตและอาจารย์สามารถสร้างผลงานเพื่อส่งในรายวิชานี้ได้</p>
-            {(currentRole === 0 || currentRole === 1 || currentRole === 2) &&
-              (classDetail.is_enrolled || classDetail.is_responsible || currentRole === 0) && (
+            {token && (currentRole === 0 || currentRole === 1 || currentRole === 2) &&
+              (classDetail.is_enrolled || classDetail.is_responsible || isAdmin) && (
               <button
                 className="btn-add-assignment-empty"
                 onClick={() => navigate("/create-assignment", { state: { class_id } })}
@@ -213,15 +225,12 @@ const ClassDetail = () => {
         ) : (
           <div className="assignment-grid">
             {currentAssignments.map((a) => {
-              const isClassResponsible = Boolean(
-                currentRole === 0 ||
-                classDetail.is_responsible ||
-                (classDetail.created_by && String(classDetail.created_by) === String(currentUserId))
-              );
               const isAssignmentOwner = Boolean(
-                currentUserId && String(a.created_by) === String(currentUserId)
+                token && currentUserId && String(a.created_by) === String(currentUserId)
               );
-              const canDeleteAssignment = isClassResponsible || isAssignmentOwner;
+              const canDeleteAssignment = Boolean(
+                token && (isClassResponsible || isAssignmentOwner)
+              );
 
               return (
                 <div
@@ -243,14 +252,11 @@ const ClassDetail = () => {
                           {formatThaiYear(a.created_datetime)}
                         </span>
                       )}
-                      {a.has_no_resources && (isClassResponsible || isAssignmentOwner) && (
+                      {/* ⚠️ แจ้งเตือน (ไม่มีไฟล์/ลิงค์) แสดงเฉพาะเจ้าของรายวิชาหรือ Admin เท่านั้น */}
+                      {a.has_no_resources && isClassResponsible && (
                         <span
                           className="assignment-no-resource-tag"
-                          title={
-                            isAssignmentOwner
-                              ? "⚠️ ผลงานของคุณยังไม่มีไฟล์แนบหรือลิงก์ภายนอก"
-                              : "⚠️ แจ้งเตือนผู้รับผิดชอบรายวิชา: นิสิตยังไม่ได้แนบไฟล์หรือลิงก์ภายนอก"
-                          }
+                          title="⚠️ แจ้งเตือนผู้รับผิดชอบรายวิชา: นิสิตยังไม่ได้แนบไฟล์หรือลิงก์ภายนอก"
                         >
                           <FiAlertTriangle size={11} /> ไม่มีไฟล์/ลิงก์
                         </span>

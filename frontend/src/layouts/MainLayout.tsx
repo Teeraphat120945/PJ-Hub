@@ -227,10 +227,10 @@ function MainLayout() {
                     className={`sidebar-link ${isActive("/ClassUserManagement") ? "active" : ""}`}
                     to="/ClassUserManagement"
                     onClick={() => setIsMobileOpen(false)}
-                    title="จัดการนิสิตในวิชา"
+                    title="จัดการผู้ใช้งานในรายวิชา"
                   >
                     <FiUsers className="link-icon" />
-                    {!isCollapsed && <span>จัดการนิสิตในวิชา</span>}
+                    {!isCollapsed && <span>จัดการผู้ใช้งานในรายวิชา</span>}
                   </Link>
                 </li>
               </ul>

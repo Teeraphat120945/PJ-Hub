@@ -26,8 +26,9 @@ const ClassEdit = () => {
         const data = await fetchClassDetail(class_id);
 
         const currentUserId = localStorage.getItem("user_id");
-        const currentRole = Number(localStorage.getItem("role") || localStorage.getItem("role_flg"));
-        const isCreator = String(data.created_by) === String(currentUserId);
+        const rawRole = localStorage.getItem("role") || localStorage.getItem("role_flg");
+        const currentRole = rawRole !== null && rawRole !== undefined ? Number(rawRole) : null;
+        const isCreator = Boolean(currentUserId && String(data.created_by) === String(currentUserId));
         const isAdmin = currentRole === 0;
 
         if (!isCreator && !isAdmin) {

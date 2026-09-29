@@ -4,6 +4,7 @@ import {
   downloadAssignmentFile,
   getAssignment,
   getAssignmentDetail,
+  getAssignmentPublicDetail,
   getAssignmentByUser,
   updateAssignment,
   deleteAssignment,
@@ -22,6 +23,7 @@ router.delete("/delete/:assignmentId", authMiddleware, authorizeRoles(0, 1, 2), 
 
 router.get("/get-assignment-by-user", authMiddleware, authorizeRoles(0, 1, 2), getAssignmentByUser);
 router.get("/get-assignment/:classId", getAssignment);
+router.get("/public-detail/:assignment_id", getAssignmentPublicDetail);
 router.get("/get-detail/:assignment_id", authMiddleware, getAssignmentDetail);
 
 router.get("/file/:fileId", authMiddleware, downloadAssignmentFile);

@@ -27,6 +27,7 @@ export type TeacherClassItem = {
   class_id: string;
   class_name: string;
   assignment_count: number;
+  created_by?: string;
   created_datetime?: string;
 };
 
