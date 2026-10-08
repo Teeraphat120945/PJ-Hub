@@ -681,13 +681,15 @@ export const login = async (
           role_flg
         FROM users
         WHERE (
-          user_name = ?
+          user_id = ?
+          OR user_name = ?
           OR LOWER(email) = LOWER(?)
         )
         AND deleted_flg = 0
         LIMIT 1
       `,
       [
+        loginKey,
         loginKey,
         loginKey,
       ]

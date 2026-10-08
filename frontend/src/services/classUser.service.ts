@@ -1,4 +1,6 @@
-const API = "http://localhost:3000/api/class-user";
+import { API_BASE_URL, fetchWithAuth } from "../config/api";
+
+const API = `${API_BASE_URL}/api/class-user`;
 
 export const authHeader = () => {
   const token = localStorage.getItem("token");
@@ -14,6 +16,7 @@ export const authHeader = () => {
 export type Class = {
   class_id: string;
   class_name: string;
+  created_by?: string;
 };
 
 export type ClassUser = {
@@ -21,10 +24,11 @@ export type ClassUser = {
   user_name: string;
   role_flg: number;
   view_flg: 0 | 1;
+  is_creator?: number | boolean;
 };
 
 export const fetchClasses = async (): Promise<Class[]> => {
-  const res = await fetch(`${API}/classes`, {
+  const res = await fetchWithAuth(`${API}/classes`, {
     headers: authHeader(),
   });
 
@@ -40,7 +44,7 @@ export const fetchClasses = async (): Promise<Class[]> => {
 export const fetchClassUsers = async (
   classId: string,
 ): Promise<ClassUser[]> => {
-  const res = await fetch(`${API}/${classId}/users`, { headers: authHeader() });
+  const res = await fetchWithAuth(`${API}/${classId}/users`, { headers: authHeader() });
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
@@ -52,7 +56,7 @@ export const fetchClassUsers = async (
 };
 
 export const addClassUser = async (classId: string, user_id: string) => {
-  const res = await fetch(`${API}/${classId}/users`, {
+  const res = await fetchWithAuth(`${API}/${classId}/users`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -70,7 +74,7 @@ export const addClassUser = async (classId: string, user_id: string) => {
 };
 
 export const removeClassUser = async (classId: string, userId: string) => {
-  const res = await fetch(`${API}/${classId}/users/${userId}`, {
+  const res = await fetchWithAuth(`${API}/${classId}/users/${userId}`, {
     method: "DELETE",
     headers: authHeader(),
   });

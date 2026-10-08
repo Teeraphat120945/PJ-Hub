@@ -399,6 +399,24 @@
   border-radius: var(--radius-full);
 }
 
+.assignment-no-resource-tag.tag-no-both {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.assignment-no-resource-tag.tag-no-file {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.assignment-no-resource-tag.tag-no-link {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
 .assignment-title {
   font-size: 1.02rem;
   font-weight: 600;

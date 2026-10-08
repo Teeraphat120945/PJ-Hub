@@ -24,6 +24,8 @@ import {
   FiShield,
   FiAlertTriangle,
   FiLink,
+  FiChevronDown,
+  FiChevronUp,
 } from "react-icons/fi";
 import { formatThaiYear, calculateExpiryInfo } from "../../utils/dateUtils";
 import {
@@ -55,6 +57,7 @@ const AssignmentDetail = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+  const [isLifecycleExpanded, setIsLifecycleExpanded] = useState(false);
 
   const token = localStorage.getItem("token");
   const currentUserId = localStorage.getItem("user_id");
@@ -563,66 +566,77 @@ const AssignmentDetail = () => {
         </div>
         )}
 
-        {/* แผงข้อมูลการดูแลรักษาและอายุทรัพยากร (เฉพาะเจ้าของผลงานและอาจารย์ผู้รับผิดชอบรายวิชา) */}
+        {/* แผงข้อมูลการดูแลรักษาและอายุทรัพยากร (ฉบับกะทัดรัด Compact) */}
         {!isPublicView && (isWorkOwner || isCourseInstructor) && expiryInfo && (
-          <div className="lifecycle-panel margin-top-20">
-            <div className="lifecycle-header">
-              <div className="lifecycle-title-group">
-                <div className="lifecycle-icon-badge">
-                  <FiClock size={22} />
+          <div className="lifecycle-panel compact-lifecycle margin-top-20">
+            <div className="lifecycle-header-compact">
+              <div className="lifecycle-title-group-compact">
+                <div className="lifecycle-icon-badge-compact">
+                  <FiClock size={18} />
                 </div>
                 <div>
-                  <div className="lifecycle-title-row">
-                    <h4 className="lifecycle-title">การดูแลรักษาและรอบอายุทรัพยากร (Maintenance & Resource Lifecycle)</h4>
-                    <span className="lifecycle-owner-pill">
-                      {isWorkOwner ? "คุณคือเจ้าของผลงาน" : "ผู้ดูแลรายวิชา"}
+                  <div className="lifecycle-title-row-compact">
+                    <h4 className="lifecycle-title-compact">สถานะการดูแลรักษาทรัพยากร</h4>
+                    <span className="lifecycle-owner-pill-compact">
+                      {isWorkOwner ? "เจ้าของผลงาน" : "ผู้ดูแลรายวิชา"}
                     </span>
                   </div>
-                  <p className="lifecycle-subtitle">
-                    ไฟล์แนบจัดเก็บถาวรตลอดไป พร้อมระบบตรวจเช็คสุขภาพลิงก์ภายนอกและรอบทบทวนคุณภาพประจำปี เพื่อให้ผลงานสมบูรณ์อยู่เสมอ
+                  <p className="lifecycle-subtitle-compact">
+                    ไฟล์แนบจัดเก็บถาวรตลอดไป • ตรวจเช็คสถานะการเข้าถึงของลิงก์ภายนอก
                   </p>
                 </div>
               </div>
 
-              <div className="lifecycle-header-badge">
-                <span className={`lifecycle-status-pill ${expiryInfo.badgeClass}`}>
-                  <span className="status-dot" />
-                  {expiryInfo.statusLabel}
+              <div className="lifecycle-compact-badges">
+                <span className={`lifecycle-pill-badge ${hasFiles ? "pill-success" : "pill-muted"}`} title="สถานะการจัดเก็บไฟล์แนบ">
+                  <FiShield size={13} /> {hasFiles ? `จัดเก็บถาวร (${assignment?.files?.length || 0} ไฟล์)` : "ไม่มีไฟล์แนบ"}
                 </span>
+
+                {assignment.assignment_link && (
+                  <span className={`lifecycle-pill-badge ${linkCheckResult?.is_healthy ? "pill-success" : linkCheckResult ? "pill-danger" : "pill-info"}`} title="สถานะการเข้าถึงลิงก์ผลงาน">
+                    <FiExternalLink size={13} /> {checkingLink ? "กำลังตรวจ..." : linkCheckResult?.is_healthy ? "ลิงก์ออนไลน์ปกติ" : linkCheckResult ? "ลิงก์มีปัญหา" : "มีลิงก์ภายนอก"}
+                  </span>
+                )}
+
+                <span className={`lifecycle-pill-badge ${expiryInfo.badgeClass}`} title="รอบการทบทวนความถูกต้องประจำปี">
+                  <FiCalendar size={13} /> รอบทบทวน: {expiryInfo.daysRemaining > 0 ? `เหลืออีก ${expiryInfo.daysRemaining} วัน` : "ครบกำหนด"}
+                </span>
+
+                <button
+                  type="button"
+                  className="btn-toggle-lifecycle"
+                  onClick={() => setIsLifecycleExpanded((prev) => !prev)}
+                  title={isLifecycleExpanded ? "ย่อรายละเอียด" : "ดูรายละเอียดเพิ่มเติม"}
+                >
+                  {isLifecycleExpanded ? (
+                    <>
+                      <span>ย่อเก็บ</span> <FiChevronUp size={16} />
+                    </>
+                  ) : (
+                    <>
+                      <span>ดูรายละเอียด</span> <FiChevronDown size={16} />
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* 🚨 กล่องแจ้งเตือนการบำรุงรักษาเมื่อลิงก์เสีย / เข้าถึงไม่ได้ */}
+            {/* 🚨 แสดงกล่องแจ้งเตือนทันทีเมื่อลิงก์เสีย / เข้าถึงไม่ได้ แม้จะยังไม่ได้กดขยายรายละเอียด */}
             {assignment.assignment_link && linkCheckResult && !linkCheckResult.is_healthy && (
-              <div className="maintenance-alert-banner">
+              <div className="maintenance-alert-banner compact-alert">
                 <div className="alert-banner-top">
                   <div className="alert-banner-icon-box">
-                    <FiAlertTriangle size={24} />
+                    <FiAlertTriangle size={20} />
                   </div>
                   <div className="alert-banner-text">
-                    <div className="alert-badge-tag">🚨 แจ้งเตือนการบำรุงรักษา (Maintenance Alert)</div>
-                    <h4 className="alert-banner-title">
-                      ลิงก์ผลงานภายนอกไม่สามารถเข้าถึงได้ตามปกติ
-                    </h4>
+                    <h5 className="alert-banner-title">
+                      ตรวจพบปัญหาลิงก์ภายนอกไม่สามารถเข้าถึงได้ ({linkCheckResult.status_code ? `HTTP ${linkCheckResult.status_code}` : "เชื่อมต่อล้มเหลว"})
+                    </h5>
                     <p className="alert-banner-desc">
-                      ระบบตรวจพบปัญหาในการเข้าถึง URL ปลายทาง <strong>"{assignment.assignment_link}"</strong>
+                      {linkCheckResult.message}
                     </p>
                   </div>
                 </div>
-
-                <div className="alert-banner-status-box">
-                  <div className="alert-status-item">
-                    <span className="alert-status-label">สถานะ HTTP:</span>
-                    <span className="alert-status-code-pill">
-                      {linkCheckResult.status_code ? `HTTP ${linkCheckResult.status_code}` : "เชื่อมต่อล้มเหลว (Connection Error)"}
-                    </span>
-                  </div>
-                  <div className="alert-status-item">
-                    <span className="alert-status-label">รายละเอียดปัญหา:</span>
-                    <span className="alert-status-msg">{linkCheckResult.message}</span>
-                  </div>
-                </div>
-
                 <div className="alert-banner-action-buttons">
                   {canEdit && (
                     <button
@@ -630,7 +644,7 @@ const AssignmentDetail = () => {
                       className="btn-alert-edit"
                       onClick={() => navigate(`/edit-assignment/${assignment.assignment_id}/edit`)}
                     >
-                      <FiEdit size={14} /> แก้ไขเพื่อเปลี่ยนลิงก์ผลงาน
+                      <FiEdit size={13} /> แก้ไขลิงก์
                     </button>
                   )}
                   <button
@@ -639,189 +653,97 @@ const AssignmentDetail = () => {
                     disabled={checkingLink}
                     onClick={() => handleCheckLink()}
                   >
-                    <FiRefreshCw size={14} className={checkingLink ? "spin-icon" : ""} />
-                    {checkingLink ? "กำลังตรวจสอบซ้ำ..." : "ตรวจสอบลิงก์อีกครั้ง"}
+                    <FiRefreshCw size={13} className={checkingLink ? "spin-icon" : ""} />
+                    {checkingLink ? "กำลังตรวจ..." : "ตรวจซ้ำ"}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* 🟢 กล่องยืนยันเมื่อลิงก์พร้อมใช้งานปกติ */}
-            {assignment.assignment_link && linkCheckResult && linkCheckResult.is_healthy && (
-              <div className="maintenance-healthy-banner">
-                <FiCheckCircle size={18} className="healthy-banner-icon" />
-                <div className="healthy-banner-text">
-                  <strong>ลิงก์ภายนอกพร้อมใช้งานปกติ:</strong> ทดสอบเชื่อมต่อล่าสุดสำเร็จ ({linkCheckResult.status_code ? `HTTP ${linkCheckResult.status_code}` : "HTTP 200 OK"}) ปลายทางเปิดแชร์และเข้าถึงได้
-                </div>
-                <button
-                  type="button"
-                  className="btn-healthy-recheck"
-                  disabled={checkingLink}
-                  onClick={() => handleCheckLink()}
-                  title="กดเพื่อทดสอบการเชื่อมต่ออีกครั้ง"
-                >
-                  <FiRefreshCw size={12} className={checkingLink ? "spin-icon" : ""} />
-                  {checkingLink ? "กำลังตรวจ..." : "ตรวจซ้ำ"}
-                </button>
-              </div>
-            )}
-
-            <div className="lifecycle-metrics-grid">
-              <div className={`lifecycle-metric-card primary ${expiryInfo.badgeClass}`}>
-                <span className="metric-label">
-                  <FiClock size={14} /> ระยะเวลาในรอบทบทวน
-                </span>
-                <span className="metric-value">
-                  {expiryInfo.daysRemaining > 0 ? `${expiryInfo.daysRemaining} วัน` : "ครบกำหนดแล้ว"}
-                </span>
-                <span className="metric-subtext">{expiryInfo.remainingLabel}</span>
-              </div>
-
-              <div className={`lifecycle-metric-card permanent-card ${assignment.files.length === 0 ? "card-resource-empty" : ""}`}>
-                <span className="metric-label">
-                  <FiShield size={14} /> สถานะไฟล์แนบ
-                </span>
-                <span className={`metric-value-sm ${assignment.files.length > 0 ? "color-success" : "color-warning"}`}>
-                  {assignment.files.length > 0 ? "จัดเก็บถาวร" : "ยังไม่มีไฟล์แนบ"}
-                </span>
-                <span className="metric-subtext">
-                  {assignment.files.length > 0
-                    ? `ปลอดภัย ${assignment.files.length} ไฟล์ • ไม่มีวันหมดอายุ`
-                    : "⚠️ แนะนำอัปโหลดไฟล์เพื่อจัดเก็บถาวร"}
-                </span>
-              </div>
-
-              <div className={`lifecycle-metric-card ${!assignment.assignment_link ? "card-resource-empty" : linkCheckResult && !linkCheckResult.is_healthy ? "card-expired" : "link-card"}`}>
-                <span className="metric-label">
-                  <FiExternalLink size={14} /> สถานะลิงก์ผลงาน
-                </span>
-                <span className="metric-value-sm">
-                  {!assignment.assignment_link
-                    ? "ยังไม่มีลิงก์"
-                    : checkingLink
-                    ? "กำลังตรวจเช็ค..."
-                    : linkCheckResult?.is_healthy
-                    ? "🟢 พร้อมใช้งาน"
-                    : "🚨 ตรวจพบปัญหา"}
-                </span>
-                <span className="metric-subtext">
-                  {!assignment.assignment_link
-                    ? "⚠️ แนะนำเพิ่ม URL ผลงานที่หน้าแก้ไข"
-                    : checkingLink
-                    ? "ทดสอบเชื่อมต่อปลายทาง..."
-                    : linkCheckResult?.is_healthy
-                    ? `HTTP ${linkCheckResult.status_code || 200} เปิดสาธารณะ`
-                    : `${linkCheckResult?.status_code ? `HTTP ${linkCheckResult.status_code}` : "เชื่อมต่อไม่ผ่าน"} กรุณาแก้ไข`}
-                </span>
-              </div>
-
-              <div className={`lifecycle-metric-card ${expiryInfo.isExpired ? "card-expired" : expiryInfo.isExpiringSoon ? "card-warning" : ""}`}>
-                <span className="metric-label">
-                  <FiCalendar size={14} /> วันครบกำหนดรอบดูแล
-                </span>
-                <span className="metric-value-sm">{expiryInfo.expiryFormatted}</span>
-                <span className="metric-subtext">รอบทบทวนคุณภาพประจำปี ({expiryInfo.totalDays} วัน)</span>
-              </div>
-            </div>
-
-            <div className="lifecycle-progress-box">
-              <div className="progress-labels">
-                <span className="progress-title">ความคืบหน้ารอบทบทวนคุณภาพประจำปี</span>
-                <span className="progress-pct">{expiryInfo.percentElapsed}%</span>
-              </div>
-              <div className="progress-track">
-                <div
-                  className={`progress-fill ${expiryInfo.status}`}
-                  style={{ width: `${Math.min(100, expiryInfo.percentElapsed)}%` }}
-                />
-              </div>
-              <div className="progress-footer-text">
-                <span>เผยแพร่มาแล้ว {expiryInfo.daysElapsed} วัน (ไฟล์จัดเก็บถาวร)</span>
-                <span>
-                  {expiryInfo.daysRemaining > 0
-                    ? `เหลือเวลาในรอบทบทวนอีก ${expiryInfo.daysRemaining} วัน`
-                    : "ถึงรอบการทบทวนความถูกต้องของข้อมูล"}
-                </span>
-              </div>
-            </div>
-
-            <div className="lifecycle-guidance-box">
-              <h5 className="guidance-title">
-                <FiCheckCircle size={16} /> ข้อมูลการดูแลรักษาทรัพยากรผลงาน (Maintenance Checklist)
-              </h5>
-              <div className="guidance-grid">
-                <div className="guidance-item">
-                  <div className="guidance-item-header">
-                    <FiShield size={16} className="guidance-icon shield" />
-                    <strong>ไฟล์แนบผลงาน (จัดเก็บถาวร - Permanent Storage)</strong>
-                    <span className="guidance-badge-permanent">ถาวรตลอดไป</span>
+            {/* รายละเอียดเพิ่มเติม (แสดงเมื่อกดขยาย) */}
+            {isLifecycleExpanded && (
+              <div className="lifecycle-expanded-content">
+                <div className="lifecycle-metrics-grid">
+                  <div className={`lifecycle-metric-card primary ${expiryInfo.badgeClass}`}>
+                    <span className="metric-label">
+                      <FiClock size={14} /> ระยะเวลาในรอบทบทวน
+                    </span>
+                    <span className="metric-value">
+                      {expiryInfo.daysRemaining > 0 ? `${expiryInfo.daysRemaining} วัน` : "ครบกำหนดแล้ว"}
+                    </span>
+                    <span className="metric-subtext">{expiryInfo.remainingLabel}</span>
                   </div>
-                  <p>
-                    {assignment.files.length > 0
-                      ? `ไฟล์แนบทั้งหมด (${assignment.files.length} รายการ) ได้รับการจัดเก็บบนระบบ UP PJ-Hub อย่างถาวร ไม่มีการลบอัตโนมัติเมื่อครบกำหนดรอบปี ผู้จัดทำและอาจารย์สามารถดาวน์โหลดได้ตลอดเวลา และสามารถอัปโหลดไฟล์ฉบับปรับปรุงใหม่ได้ทุกเมื่อ`
-                      : "ผลงานนี้ยังไม่มีไฟล์แนบ หากต้องการเพิ่มเอกสาร รายงานฉบับสมบูรณ์ หรือโปสเตอร์ สามารถแนบเพิ่มเติมได้ที่หน้าแก้ไขผลงาน โดยไฟล์ที่อัปโหลดจะถูกจัดเก็บถาวรเช่นกัน"}
-                  </p>
+
+                  <div className={`lifecycle-metric-card permanent-card ${assignment.files.length === 0 ? "card-resource-empty" : ""}`}>
+                    <span className="metric-label">
+                      <FiShield size={14} /> สถานะไฟล์แนบ
+                    </span>
+                    <span className={`metric-value-sm ${assignment.files.length > 0 ? "color-success" : "color-warning"}`}>
+                      {assignment.files.length > 0 ? "จัดเก็บถาวร" : "ยังไม่มีไฟล์แนบ"}
+                    </span>
+                    <span className="metric-subtext">
+                      {assignment.files.length > 0
+                        ? `ปลอดภัย ${assignment.files.length} ไฟล์ • ไม่มีวันหมดอายุ`
+                        : "แนะนำอัปโหลดไฟล์เพื่อจัดเก็บถาวร"}
+                    </span>
+                  </div>
+
+                  <div className={`lifecycle-metric-card ${!assignment.assignment_link ? "card-resource-empty" : linkCheckResult && !linkCheckResult.is_healthy ? "card-expired" : "link-card"}`}>
+                    <span className="metric-label">
+                      <FiExternalLink size={14} /> สถานะลิงก์ผลงาน
+                    </span>
+                    <span className="metric-value-sm">
+                      {!assignment.assignment_link
+                        ? "ยังไม่มีลิงก์"
+                        : checkingLink
+                        ? "กำลังตรวจเช็ค..."
+                        : linkCheckResult?.is_healthy
+                        ? "พร้อมใช้งาน"
+                        : "ตรวจพบปัญหา"}
+                    </span>
+                    <span className="metric-subtext">
+                      {!assignment.assignment_link
+                        ? "แนะนำเพิ่ม URL ผลงานที่หน้าแก้ไข"
+                        : linkCheckResult?.is_healthy
+                        ? `HTTP ${linkCheckResult.status_code || 200} เข้าถึงได้ปกติ`
+                        : "กรุณาตรวจสอบสิทธิ์การแชร์หรือแก้ไขลิงก์"}
+                    </span>
+                  </div>
+
+                  <div className={`lifecycle-metric-card ${expiryInfo.isExpired ? "card-expired" : expiryInfo.isExpiringSoon ? "card-warning" : ""}`}>
+                    <span className="metric-label">
+                      <FiCalendar size={14} /> วันครบกำหนดรอบดูแล
+                    </span>
+                    <span className="metric-value-sm">{expiryInfo.expiryFormatted}</span>
+                    <span className="metric-subtext">รอบทบทวนคุณภาพประจำปี ({expiryInfo.totalDays} วัน)</span>
+                  </div>
                 </div>
 
-                <div className="guidance-item">
-                  <div className="guidance-item-header">
-                    <FiLink size={16} className="guidance-icon link" />
-                    <strong>ลิงก์ผลงานภายนอก (ระบบตรวจสอบอัตโนมัติ)</strong>
+                {canEdit && (
+                  <div className="lifecycle-actions-bar margin-top-12">
+                    <button
+                      type="button"
+                      className="btn-renew-maintenance"
+                      onClick={() => navigate(`/edit-assignment/${assignment.assignment_id}/edit`)}
+                    >
+                      <FiRefreshCw size={14} /> แก้ไข / อัปเดตทรัพยากรผลงาน
+                    </button>
+
                     {assignment.assignment_link && (
-                      <span className={`guidance-link-status ${linkCheckResult?.is_healthy ? "healthy" : linkCheckResult ? "error" : "checking"}`}>
-                        {checkingLink ? "กำลังตรวจ..." : linkCheckResult?.is_healthy ? "ออนไลน์ปกติ" : linkCheckResult ? "ต้องแก้ไข" : "รอตรวจสอบ"}
-                      </span>
-                    )}
-                  </div>
-                  <p>
-                    {assignment.assignment_link
-                      ? "ระบบตรวจเช็คความพร้อมใช้งานของ URL อัตโนมัติ (HTTP 200, 403 สิทธิ์ส่วนตัว, 404 ลิงก์ถูกลบ) หากพบว่าปลายทางไม่สามารถเข้าถึงได้ ระบบจะแจ้งเตือนการบำรุงรักษาในหน้านี้ทันที พร้อมปุ่มสำหรับกดตรวจสอบซ้ำหรือแก้ไขลิงก์ใหม่"
-                      : "ผลงานนี้ยังไม่มีลิงก์ภายนอก สามารถเพิ่ม URL ลิงก์ไปยังโค้ดโครงงาน ตัวอย่างการทำงาน หรือวิดีโอสาธิตได้ที่หน้าแก้ไขผลงาน"}
-                  </p>
-                </div>
-              </div>
-
-              {canEdit && (
-                <div className="lifecycle-actions-bar">
-                  <button
-                    type="button"
-                    className="btn-renew-maintenance"
-                    onClick={() => navigate(`/edit-assignment/${assignment.assignment_id}/edit`)}
-                  >
-                    <FiRefreshCw size={15} /> แก้ไข / อัปเดตทรัพยากรผลงาน
-                  </button>
-
-                  {assignment.assignment_link && (
-                    <>
                       <button
                         type="button"
                         className="btn-test-link-action"
                         disabled={checkingLink}
                         onClick={() => handleCheckLink()}
-                        title="กดเพื่อทดสอบการเชื่อมต่อของลิงก์อีกครั้ง"
                       >
-                        <FiRefreshCw size={14} className={checkingLink ? "spin-icon" : ""} />
-                        {checkingLink ? "กำลังตรวจสอบลิงก์..." : "ตรวจสอบสถานะลิงก์ทันที"}
+                        <FiRefreshCw size={13} className={checkingLink ? "spin-icon" : ""} />
+                        {checkingLink ? "กำลังตรวจ..." : "ตรวจสอบสถานะลิงก์"}
                       </button>
-
-                      <a
-                        href={
-                          assignment.assignment_link.startsWith("http://") ||
-                          assignment.assignment_link.startsWith("https://")
-                            ? assignment.assignment_link
-                            : `https://${assignment.assignment_link}`
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn-test-link"
-                      >
-                        <FiExternalLink size={15} /> เปิดทดสอบในแท็บใหม่
-                      </a>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

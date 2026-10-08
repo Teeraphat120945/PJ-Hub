@@ -147,7 +147,18 @@ export const getAvaliableUsers = async (req: Request, res: Response) => {
 
   const conn = await db.getConnection();
   try {
-    if (requesterRole !== 0) {
+    let currentRole = requesterRole;
+    if (requesterId) {
+      const [userRows]: any = await conn.query(
+        "SELECT role_flg FROM users WHERE user_id = ? AND deleted_flg = 0",
+        [requesterId]
+      );
+      if (userRows.length > 0 && userRows[0].role_flg !== undefined && userRows[0].role_flg !== null) {
+        currentRole = Number(userRows[0].role_flg);
+      }
+    }
+
+    if (currentRole !== 0) {
       const [classRows]: any = await conn.query(
         "SELECT created_by FROM classes WHERE class_id = ? AND deleted_flg = 0",
         [classId]
@@ -158,9 +169,15 @@ export const getAvaliableUsers = async (req: Request, res: Response) => {
       }
 
       const isCreator = String(classRows[0].created_by) === String(requesterId);
-      if (!isCreator) {
+      const [membership]: any = await conn.query(
+        "SELECT 1 FROM class_users WHERE class_id = ? AND user_id = ? AND deleted_flg = 0",
+        [classId, requesterId]
+      );
+      const isParticipantTeacher = currentRole === 1 && membership.length > 0;
+
+      if (!isCreator && !isParticipantTeacher) {
         return res.status(403).json({
-          message: "สงวนสิทธิ์เฉพาะอาจารย์ผู้รับผิดชอบรายวิชาหรือผู้ดูแลระบบเท่านั้น",
+          message: "สงวนสิทธิ์เฉพาะอาจารย์ผู้สอนในรายวิชาหรือผู้ดูแลระบบเท่านั้น",
         });
       }
     }

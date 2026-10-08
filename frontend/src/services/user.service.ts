@@ -1,4 +1,6 @@
-const API = "http://localhost:3000/api/user";
+import { API_BASE_URL, fetchWithAuth } from "../config/api";
+
+const API = `${API_BASE_URL}/api/user`;
 
 const getToken = () => localStorage.getItem("token");
 
@@ -28,7 +30,7 @@ export type User = {
 };
 
 export const fetchUsers = async (): Promise<User[]> => {
-  const res = await fetch(`${API}/getUsers`, {
+  const res = await fetchWithAuth(`${API}/getUsers`, {
     headers: authHeader(),
   });
 
@@ -45,7 +47,7 @@ export const updateUserRole = async (
   user_id: string,
   role_flg: number,
 ): Promise<void> => {
-  const res = await fetch(`${API}/users/${user_id}/role`, {
+  const res = await fetchWithAuth(`${API}/users/${user_id}/role`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -64,7 +66,7 @@ export const updateUserActive = async (
   user_id: string,
   active: 0 | 1,
 ): Promise<void> => {
-  const res = await fetch(`${API}/users/${user_id}/active`, {
+  const res = await fetchWithAuth(`${API}/users/${user_id}/active`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -80,7 +82,7 @@ export const updateUserActive = async (
 };
 
 export const fetchAvailableUsers = async (classId: string) => {
-  const res = await fetch(`${API}/users/${classId}/available-users`, {
+  const res = await fetchWithAuth(`${API}/users/${classId}/available-users`, {
     headers: authHeader(),
   });
 
@@ -94,7 +96,7 @@ export const fetchAvailableUsers = async (classId: string) => {
 };
 
 export const fetchgetRoles = async (): Promise<Role[]> => {
-  const res = await fetch(`${API}/get-role`, {
+  const res = await fetchWithAuth(`${API}/get-role`, {
     headers: authHeader(),
   });
 

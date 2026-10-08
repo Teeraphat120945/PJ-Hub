@@ -107,10 +107,31 @@ function AssignmentEdit() {
     }
   };
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+  const MAX_FILE_COUNT = 10;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
     const files = Array.from(e.target.files);
+
+    const oversized = files.find((f) => f.size > MAX_FILE_SIZE);
+    if (oversized) {
+      toast.error(`ไฟล์ "${oversized.name}" มีขนาดเกิน 50MB (ไม่อนุญาตให้อัปโหลด)`);
+      e.target.value = "";
+      return;
+    }
+
+    const currentRemainingFilesCount =
+      (assignment?.files || []).filter((f) => !deletedFileIds.includes(f.id)).length;
+    const totalFilesAfter = currentRemainingFilesCount + newFiles.length + files.length;
+
+    if (totalFilesAfter > MAX_FILE_COUNT) {
+      toast.error(`สามารถแนบไฟล์รวมได้สูงสุดไม่เกิน ${MAX_FILE_COUNT} ไฟล์`);
+      e.target.value = "";
+      return;
+    }
+
     setNewFiles((prev) => [...prev, ...files]);
     e.target.value = "";
   };

@@ -62,11 +62,28 @@ const CreateAssignment = () => {
     fetchClasses();
   }, []);
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+  const MAX_FILE_COUNT = 10;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
-    const newFiles = Array.from(e.target.files);
-    setFiles((prev) => [...prev, ...newFiles]);
+    const selectedList = Array.from(e.target.files);
+
+    const oversized = selectedList.find((f) => f.size > MAX_FILE_SIZE);
+    if (oversized) {
+      toast.error(`ไฟล์ "${oversized.name}" มีขนาดเกิน 50MB (ไม่อนุญาตให้อัปโหลด)`);
+      e.target.value = "";
+      return;
+    }
+
+    if (files.length + selectedList.length > MAX_FILE_COUNT) {
+      toast.error(`สามารถแนบไฟล์ได้สูงสุดไม่เกิน ${MAX_FILE_COUNT} ไฟล์`);
+      e.target.value = "";
+      return;
+    }
+
+    setFiles((prev) => [...prev, ...selectedList]);
     e.target.value = "";
   };
 

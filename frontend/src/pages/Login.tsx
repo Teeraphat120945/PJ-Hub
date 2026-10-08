@@ -38,6 +38,11 @@ function Login() {
     const provider = searchParams.get("provider") || "Social Account";
     const errorParam = searchParams.get("error");
     const demoParam = searchParams.get("oauth_demo");
+    const expiredParam = searchParams.get("expired");
+
+    if (expiredParam) {
+      toast.warn("เซสชันการเข้าสู่ระบบหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+    }
 
     if (errorParam) {
       toast.error("การเข้าสู่ระบบผ่าน Social Login ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
@@ -61,6 +66,9 @@ function Login() {
       localStorage.setItem("token", token);
       localStorage.setItem("role", String(role || 3));
       localStorage.setItem("role_flg", String(role || 3));
+
+      // ล้าง token และข้อมูลผู้ใช้ออกจาก URL และ browser history ทันทีเพื่อความปลอดภัย
+      window.history.replaceState({}, document.title, window.location.pathname);
 
       toast.success(`เข้าสู่ระบบด้วย ${provider} สำเร็จ`);
       window.location.href = "/";
@@ -316,9 +324,9 @@ function Login() {
         <div className="demo-modal-overlay" onClick={() => setShowDemoModal(null)}>
           <div className="demo-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="demo-modal-header">
-              <span className="demo-badge">Social Login Simulator</span>
+              <span className="demo-badge">โหมดจำลองสำหรับทดสอบ (Developer Simulator)</span>
               <h3>เข้าสู่ระบบด้วย {showDemoModal === "google" ? "Google" : "Microsoft"}</h3>
-              <p>จำลองการยืนยันตัวตนผ่าน OAuth 2.0 พร้อมทดสอบระบบ <strong>Account Linking</strong> อัตโนมัติ</p>
+              <p>เนื่องจากเซิร์ฟเวอร์ยังไม่ได้ตั้งค่า Client ID สำหรับ {showDemoModal === "google" ? "Google" : "Microsoft"} ใน .env ระบบจึงเปิดโหมดจำลองเพื่อให้ท่านสามารถทดสอบการเข้าสู่ระบบและ Role ได้ตามปกติ</p>
             </div>
 
             <form onSubmit={handleDemoSocialSubmit}>

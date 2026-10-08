@@ -36,6 +36,7 @@ type AssignmentCard = {
   has_files?: boolean;
   has_link?: boolean;
   has_no_resources?: boolean;
+  resource_status?: "no_both" | "no_files" | "no_link" | "complete";
 };
 
 const ITEMS_PER_PAGE = 8;
@@ -55,7 +56,15 @@ const ClassDetail = () => {
   const currentRole = token && rawRole !== null && rawRole !== undefined ? Number(rawRole) : null;
   const isAdmin = currentRole === 0;
 
-  // ตรวจสอบว่าเป็นเจ้าของรายวิชา (ผู้รับผิดชอบรายวิชา) หรือผู้ดูแลระบบ (Admin) หรือไม่
+  // ตรวจสอบว่าเป็นอาจารย์ผู้สร้างรายวิชา หรือผู้ดูแลระบบ (Admin) หรือไม่ (สำหรับแก้ไขรายวิชา)
+  const isClassCreatorOrAdmin = Boolean(
+    token && (
+      isAdmin ||
+      (classDetail?.created_by && currentUserId && String(classDetail.created_by) === String(currentUserId))
+    )
+  );
+
+  // ตรวจสอบว่าเป็นผู้รับผิดชอบรายวิชา (รวมอาจารย์ผู้ร่วมสอน) หรือผู้ดูแลระบบ หรือไม่
   const isClassResponsible = Boolean(
     token && (
       isAdmin ||
@@ -157,7 +166,7 @@ const ClassDetail = () => {
             <h2 className="class-title-text">{classDetail.class_name}</h2>
           </div>
 
-          {token && (isAdmin || (currentRole === 1 && isClassResponsible)) && (
+          {isClassCreatorOrAdmin && (
             <button
               className="edit-btn"
               onClick={() => navigate(`/class/${class_id}/edit`)}
@@ -252,15 +261,43 @@ const ClassDetail = () => {
                           {formatThaiYear(a.created_datetime)}
                         </span>
                       )}
-                      {/* ⚠️ แจ้งเตือน (ไม่มีไฟล์/ลิงค์) แสดงเฉพาะเจ้าของรายวิชาหรือ Admin เท่านั้น */}
-                      {a.has_no_resources && isClassResponsible && (
-                        <span
-                          className="assignment-no-resource-tag"
-                          title="⚠️ แจ้งเตือนผู้รับผิดชอบรายวิชา: นิสิตยังไม่ได้แนบไฟล์หรือลิงก์ภายนอก"
-                        >
-                          <FiAlertTriangle size={11} /> ไม่มีไฟล์/ลิงก์
-                        </span>
-                      )}
+                      {/* ⚠️ แจ้งเตือนสถานะทรัพยากร แสดงเฉพาะเจ้าของรายวิชาหรือ Admin เท่านั้น */}
+                      {isClassResponsible && (() => {
+                        const hasFiles = Boolean(a.has_files ?? (a.file_count && a.file_count > 0));
+                        const hasLink = Boolean(a.has_link ?? (a.assignment_link && a.assignment_link.trim().length > 0));
+
+                        if (!hasFiles && !hasLink) {
+                          return (
+                            <span
+                              className="assignment-no-resource-tag tag-no-both"
+                              title="⚠️ แจ้งเตือนผู้รับผิดชอบรายวิชา: ผลงานนี้ยังไม่มีทั้งไฟล์แนบและไม่มีลิงก์ภายนอก"
+                            >
+                              <FiAlertTriangle size={11} /> ไม่มีไฟล์/ลิงก์
+                            </span>
+                          );
+                        }
+                        if (!hasFiles) {
+                          return (
+                            <span
+                              className="assignment-no-resource-tag tag-no-file"
+                              title="⚠️ แจ้งเตือนผู้รับผิดชอบรายวิชา: ผลงานนี้ยังไม่มีไฟล์แนบ"
+                            >
+                              <FiAlertTriangle size={11} /> ไม่มีไฟล์
+                            </span>
+                          );
+                        }
+                        if (!hasLink) {
+                          return (
+                            <span
+                              className="assignment-no-resource-tag tag-no-link"
+                              title="⚠️ แจ้งเตือนผู้รับผิดชอบรายวิชา: ผลงานนี้ยังไม่มีลิงก์ภายนอก"
+                            >
+                              <FiAlertTriangle size={11} /> ไม่มีลิงก์
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     {canDeleteAssignment && (

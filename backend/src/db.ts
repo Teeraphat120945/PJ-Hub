@@ -5,4 +5,9 @@ export const db = mysql.createPool({
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "123456789",
   database: process.env.DB_NAME || "classroom",
+  waitForConnections: true,
+  connectionLimit: 20,
+  queueLimit: 0,
+  timezone: "+07:00",
+  charset: "utf8mb4",
 });

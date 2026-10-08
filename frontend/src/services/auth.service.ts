@@ -1,4 +1,6 @@
-const API = "http://localhost:3000/api/auth";
+import { API_BASE_URL, fetchWithAuth } from "../config/api";
+
+const API = `${API_BASE_URL}/api/auth`;
 
 export const getProfile = async () => {
   const token = localStorage.getItem("token");
@@ -7,7 +9,7 @@ export const getProfile = async () => {
     throw new Error("No token");
   }
 
-  const res = await fetch(`${API}/profile`, {
+  const res = await fetchWithAuth(`${API}/profile`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

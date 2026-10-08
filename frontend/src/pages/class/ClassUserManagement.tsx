@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "react-toastify";
 import {
   FiUsers,
@@ -10,6 +10,9 @@ import {
   FiShield,
   FiUserCheck,
   FiRotateCcw,
+  FiSearch,
+  FiX,
+  FiChevronDown,
 } from "react-icons/fi";
 import {
   fetchClasses,
@@ -36,14 +39,45 @@ function ClassUserManagement() {
   const [users, setUsers] = useState<ClassUser[]>([]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [userSearchText, setUserSearchText] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [autoPromote, setAutoPromote] = useState(true);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(false);
+
+  const token = localStorage.getItem("token");
+  const rawRole = localStorage.getItem("role") || localStorage.getItem("role_flg");
+  const currentRole = token && rawRole !== null && rawRole !== undefined ? Number(rawRole) : null;
+  const currentUserId = localStorage.getItem("user_id") || localStorage.getItem("userId");
+  const isAdmin = currentRole === 0;
 
   useEffect(() => {
     fetchClasses()
       .then(setClasses)
       .catch(() => toast.error("โหลดรายวิชาไม่สำเร็จ"));
+  }, []);
+
+  useEffect(() => {
+    setSelectedUserId("");
+    setUserSearchText("");
+    setIsDropdownOpen(false);
+  }, [selectedClassId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -64,8 +98,8 @@ function ClassUserManagement() {
           setUsers(classUsers.filter((u) => u.view_flg === 0));
           setAvailableUsers(available);
         }
-      } catch {
-        if (!cancelled) toast.error("โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
+      } catch (err: any) {
+        if (!cancelled) toast.error(err.message || "โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -75,6 +109,65 @@ function ClassUserManagement() {
       cancelled = true;
     };
   }, [selectedClassId]);
+
+  const selectedUserObj = availableUsers.find((u) => u.user_id === selectedUserId);
+
+  const filteredUsers = availableUsers.filter((u) => {
+    if (!userSearchText.trim()) return true;
+    if (
+      selectedUserObj &&
+      (userSearchText === `${selectedUserObj.user_name} (${selectedUserObj.user_id})` ||
+        userSearchText === selectedUserObj.user_name ||
+        userSearchText === selectedUserObj.user_id)
+    ) {
+      return true;
+    }
+    const term = userSearchText.trim().toLowerCase();
+    const nameMatch = (u.user_name || "").toLowerCase().includes(term);
+    const idMatch = String(u.user_id || "").toLowerCase().includes(term);
+    const combinedMatch = `${u.user_name || ""} ${u.user_id || ""}`.toLowerCase().includes(term);
+    return nameMatch || idMatch || combinedMatch;
+  });
+
+  const handleSelectUser = (user: User) => {
+    setSelectedUserId(user.user_id);
+    setUserSearchText(`${user.user_name} (${user.user_id})`);
+    setIsDropdownOpen(false);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedUserId("");
+    setUserSearchText("");
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setUserSearchText(val);
+    setIsDropdownOpen(true);
+    if (selectedUserId) {
+      if (selectedUserObj && val !== `${selectedUserObj.user_name} (${selectedUserObj.user_id})`) {
+        setSelectedUserId("");
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      setIsDropdownOpen(false);
+    } else if (e.key === "Enter") {
+      const term = userSearchText.trim().toLowerCase();
+      const exactMatch = filteredUsers.find(
+        (u) =>
+          String(u.user_id).toLowerCase() === term ||
+          (u.user_name && u.user_name.toLowerCase() === term)
+      );
+      if (exactMatch) {
+        handleSelectUser(exactMatch);
+      } else if (isDropdownOpen && filteredUsers.length === 1) {
+        handleSelectUser(filteredUsers[0]);
+      }
+    }
+  };
 
   const handleUpdateRole = async (userId: string, newRole: number, userName: string) => {
     const roleLabel = newRole === 2 ? "นิสิต" : "ผู้ใช้ทั่วไป";
@@ -127,6 +220,8 @@ function ClassUserManagement() {
       setUsers(classUsers.filter((u) => u.view_flg === 0));
       setAvailableUsers(available);
       setSelectedUserId("");
+      setUserSearchText("");
+      setIsDropdownOpen(false);
     } catch {
       toast.error("เพิ่มผู้ใช้ไม่สำเร็จ");
     }
@@ -143,13 +238,18 @@ function ClassUserManagement() {
       setAvailableUsers(available);
 
       toast.success("ลบผู้ใช้ออกจากรายวิชาเรียบร้อย");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("ลบผู้ใช้ไม่สำเร็จ");
+      toast.error(err.message || "ลบผู้ใช้ไม่สำเร็จ");
     }
   };
 
   const selectedClassObj = classes.find((c) => c.class_id === selectedClassId);
+  const isCreator = Boolean(
+    selectedClassObj?.created_by &&
+      currentUserId &&
+      String(selectedClassObj.created_by) === String(currentUserId)
+  );
 
   return (
     <div className="class-user-page">
@@ -211,21 +311,110 @@ function ClassUserManagement() {
           <div className="add-user-section">
             <h4 className="section-heading">เพิ่มผู้ใช้เข้ารายวิชา</h4>
             <div className="add-user-box">
-              <div className="user-dropdown-wrapper">
-                <FiUser className="dropdown-icon" size={16} />
-                <select
-                  className="user-dropdown"
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
+              <div className="searchable-user-wrapper" ref={searchDropdownRef}>
+                <div
+                  className={`searchable-input-container ${isDropdownOpen ? "is-focused" : ""} ${
+                    selectedUserId ? "has-selected" : ""
+                  }`}
                 >
-                  <option value="">-- เลือกผู้ใช้ที่ต้องการเพิ่ม --</option>
+                  <FiSearch className="search-input-icon" size={17} />
+                  <input
+                    type="text"
+                    className="searchable-user-input"
+                    placeholder="พิมพ์รหัสนิสิต หรือชื่อ เพื่อค้นหาผู้ใช้..."
+                    value={userSearchText}
+                    onChange={handleSearchChange}
+                    onFocus={() => setIsDropdownOpen(true)}
+                    onKeyDown={handleKeyDown}
+                  />
+                  {userSearchText && (
+                    <button
+                      type="button"
+                      className="btn-clear-user-search"
+                      onClick={handleClearSelection}
+                      title="ล้างการเลือก"
+                    >
+                      <FiX size={13} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-toggle-user-dropdown"
+                    onClick={() => setIsDropdownOpen((prev) => !prev)}
+                    title={isDropdownOpen ? "ปิดรายการ" : "เปิดรายการทั้งหมด"}
+                  >
+                    <FiChevronDown
+                      size={17}
+                      className={`dropdown-chevron ${isDropdownOpen ? "rotated" : ""}`}
+                    />
+                  </button>
+                </div>
 
-                  {availableUsers.map((u) => (
-                    <option key={u.user_id} value={u.user_id}>
-                      {u.user_name} ({u.user_id}) {u.role_flg === 3 ? "— [ผู้ใช้ทั่วไป]" : "— [นิสิต]"}
-                    </option>
-                  ))}
-                </select>
+                {isDropdownOpen && (
+                  <div className="searchable-user-menu">
+                    <div className="user-menu-header">
+                      <span>
+                        {userSearchText.trim() && !selectedUserObj
+                          ? `ผลการค้นหา (${filteredUsers.length} คน)`
+                          : `รายชื่อผู้ใช้ที่สามารถเพิ่มได้ (${availableUsers.length} คน)`}
+                      </span>
+                      {selectedUserId && (
+                        <span className="selected-indicator">เลือกผู้ใช้แล้ว</span>
+                      )}
+                    </div>
+
+                    <div className="user-menu-options-list">
+                      {availableUsers.length === 0 ? (
+                        <div className="user-menu-empty">
+                          <FiUser className="empty-menu-icon" size={24} />
+                          <p>ไม่มีผู้ใช้ที่สามารถเพิ่มได้</p>
+                          <span className="empty-sub">ผู้ใช้ทุกคนในระบบได้เข้าร่วมรายวิชานี้แล้ว</span>
+                        </div>
+                      ) : filteredUsers.length === 0 ? (
+                        <div className="user-menu-empty">
+                          <FiSearch className="empty-menu-icon" size={24} />
+                          <p>ไม่พบข้อมูลผู้ใช้ที่ตรงกับ "{userSearchText}"</p>
+                          <span className="empty-sub">ลองค้นหาด้วยรหัสนิสิต (เช่น 65..., 66...) หรือชื่อ</span>
+                        </div>
+                      ) : (
+                        filteredUsers.map((u) => {
+                          const isSelected = u.user_id === selectedUserId;
+                          return (
+                            <div
+                              key={u.user_id}
+                              className={`user-menu-option-item ${isSelected ? "selected" : ""}`}
+                              onClick={() => handleSelectUser(u)}
+                            >
+                              <div className="option-avatar">
+                                {u.user_name ? u.user_name.charAt(0).toUpperCase() : "U"}
+                              </div>
+                              <div className="option-info">
+                                <div className="option-name-row">
+                                  <span className="option-user-name">{u.user_name}</span>
+                                  <span className="option-user-id">รหัส: {u.user_id}</span>
+                                </div>
+                              </div>
+                              <div className="option-badge-col">
+                                <span
+                                  className={`option-role-tag ${
+                                    u.role_flg === 3 ? "role-guest" : "role-student"
+                                  }`}
+                                >
+                                  {u.role_flg === 3 ? "ผู้ใช้ทั่วไป" : "นิสิต"}
+                                </span>
+                                {isSelected && (
+                                  <span className="option-check-icon">
+                                    <FiCheckCircle size={15} />
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
@@ -323,6 +512,20 @@ function ClassUserManagement() {
                               <span
                                 className="protected-admin-chip"
                                 title="ผู้ดูแลระบบ (ไม่สามารถลบออกจากรายวิชาได้)"
+                              >
+                                <FiShield size={13} /> ไม่สามารถลบได้
+                              </span>
+                            ) : Boolean(u.is_creator) || (selectedClassObj?.created_by && String(u.user_id) === String(selectedClassObj.created_by)) ? (
+                              <span
+                                className="protected-admin-chip"
+                                title="อาจารย์เจ้าของรายวิชา (ไม่สามารถลบออกจากรายวิชาได้)"
+                              >
+                                <FiShield size={13} /> เจ้าของรายวิชา
+                              </span>
+                            ) : !isAdmin && !isCreator && u.role_flg === 1 && String(u.user_id) !== String(currentUserId) ? (
+                              <span
+                                className="protected-admin-chip"
+                                title="อาจารย์ผู้ร่วมสอน (ไม่สามารถลบออกจากรายวิชาได้)"
                               >
                                 <FiShield size={13} /> ไม่สามารถลบได้
                               </span>

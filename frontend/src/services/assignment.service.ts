@@ -1,4 +1,6 @@
-const API = "http://localhost:3000/api/assignment";
+import { API_BASE_URL, fetchWithAuth } from "../config/api";
+
+const API = `${API_BASE_URL}/api/assignment`;
 
 const getToken = () => localStorage.getItem("token");
 
@@ -50,6 +52,7 @@ export type Assignment = {
   has_files?: boolean;
   has_link?: boolean;
   has_no_resources?: boolean;
+  resource_status?: "no_both" | "no_files" | "no_link" | "complete";
   author_name?: string;
   class_name?: string;
   is_public_view?: boolean;
@@ -78,7 +81,7 @@ export const createAssignment = async (
     formData.append("files", file);
   });
 
-  const res = await fetch(`${API}/create`, {
+  const res = await fetchWithAuth(`${API}/create`, {
     method: "POST",
     headers: authHeader(),
     body: formData,
@@ -92,7 +95,7 @@ export const createAssignment = async (
 export const getAssignmentByClass = async (
   classId: string,
 ): Promise<Assignment[]> => {
-  const res = await fetch(`${API}/get-assignment/${classId}`, {
+  const res = await fetchWithAuth(`${API}/get-assignment/${classId}`, {
     headers: authHeader(),
   });
 
@@ -108,7 +111,7 @@ export const getAssignmentByClass = async (
 export const getAssignmentDetail = async (
   assignment_id: string,
 ): Promise<Assignment> => {
-  const res = await fetch(`${API}/get-detail/${assignment_id}`, {
+  const res = await fetchWithAuth(`${API}/get-detail/${assignment_id}`, {
     method: "GET",
     headers: authHeader(),
   });
@@ -125,7 +128,7 @@ export const getAssignmentDetail = async (
 export const getAssignmentPublicDetail = async (
   assignment_id: string,
 ): Promise<Assignment> => {
-  const res = await fetch(`${API}/public-detail/${assignment_id}`, {
+  const res = await fetchWithAuth(`${API}/public-detail/${assignment_id}`, {
     method: "GET",
   });
 
@@ -139,7 +142,7 @@ export const getAssignmentPublicDetail = async (
 };
 
 export const downloadAssignmentFile = async (fileId: number, fileName?: string) => {
-  const res = await fetch(`${API}/file/${fileId}`, {
+  const res = await fetchWithAuth(`${API}/file/${fileId}`, {
     method: "GET",
     headers: authHeader(),
   });
@@ -178,7 +181,7 @@ export const downloadAssignmentFile = async (fileId: number, fileName?: string) 
 
 export const getAssignmentByUser = async (onlyMe?: boolean) => {
   const query = onlyMe ? "?only_me=true" : "";
-  const res = await fetch(`${API}/get-assignment-by-user${query}`, {
+  const res = await fetchWithAuth(`${API}/get-assignment-by-user${query}`, {
     method: "GET",
     headers: authHeader(),
   });
@@ -214,7 +217,7 @@ export const updateAssignment = async (
     formData.append("deletedFileIds[]", id.toString());
   });
 
-  const res = await fetch(`${API}/update/${assignmentId}`, {
+  const res = await fetchWithAuth(`${API}/update/${assignmentId}`, {
     method: "PUT",
     headers: authHeader(),
     body: formData,
@@ -227,7 +230,7 @@ export const updateAssignment = async (
 };
 
 export const deleteAssignment = async (assignmentId: number) => {
-  const res = await fetch(`${API}/delete/${assignmentId}`, {
+  const res = await fetchWithAuth(`${API}/delete/${assignmentId}`, {
     method: "DELETE",
     headers: authHeader(),
   });
@@ -250,10 +253,11 @@ export type SearchAssignmentResult = {
   author_name?: string;
 };
 
-export const searchAssignments = async (query: string): Promise<SearchAssignmentResult[]> => {
-  if (!query.trim()) return [];
+export const searchAssignments = async (query?: string): Promise<SearchAssignmentResult[]> => {
   try {
-    const res = await fetch(`${API}/search?search=${encodeURIComponent(query.trim())}`, {
+    const trimmed = query ? query.trim() : "";
+    const url = trimmed ? `${API}/search?search=${encodeURIComponent(trimmed)}` : `${API}/search`;
+    const res = await fetchWithAuth(url, {
       headers: authHeader(),
     });
     if (!res.ok) return [];
@@ -274,7 +278,7 @@ export type LinkCheckResult = {
 };
 
 export const checkLinkService = async (url: string): Promise<LinkCheckResult> => {
-  const res = await fetch(`${API}/check-link`, {
+  const res = await fetchWithAuth(`${API}/check-link`, {
     method: "POST",
     headers: {
       ...authHeader(),

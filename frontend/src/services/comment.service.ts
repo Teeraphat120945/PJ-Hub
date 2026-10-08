@@ -1,4 +1,6 @@
-const API = "http://localhost:3000/api/comments";
+import { API_BASE_URL, fetchWithAuth } from "../config/api";
+
+const API = `${API_BASE_URL}/api/comments`;
 
 const getToken = () => localStorage.getItem("token");
 
@@ -35,7 +37,7 @@ export const addCommentService = async (
   comment_text: message,
   };
 
-  const res = await fetch(
+  const res = await fetchWithAuth(
     `${API}/create`,
     {
       method: "POST",
@@ -60,7 +62,7 @@ export const addCommentService = async (
 export const getCommentsService = async (
   assignment_id: string | number,
 ): Promise<Comment[]> => {
-  const res = await fetch(`${API}/${assignment_id}`, {
+  const res = await fetchWithAuth(`${API}/${assignment_id}`, {
     method: "GET",
     headers: {
       ...authHeader(),
@@ -80,7 +82,7 @@ export const updateCommentService = async (
   comment_id: number,
   comment_text: string,
 ) => {
-  const res = await fetch(`${API}/update/${comment_id}`, {
+  const res = await fetchWithAuth(`${API}/update/${comment_id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -100,7 +102,7 @@ export const updateCommentService = async (
 };
 
 export const deleteCommentService = async (comment_id: number) => {
-  const res = await fetch(`${API}/delete/${comment_id}`, {
+  const res = await fetchWithAuth(`${API}/delete/${comment_id}`, {
     method: "DELETE",
     headers: authHeader(),
   });

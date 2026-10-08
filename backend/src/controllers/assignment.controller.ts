@@ -6,12 +6,12 @@ import { syncAdminsToClasses } from "./class.controller";
 
 export const createAssignment = async (req: any, res: Response) => {
   const conn = await db.getConnection();
+  const files = (req.files as Express.Multer.File[]) || [];
 
   try {
     const { class_id, title, detail, link, work_type } = req.body;
     const userId = req.user?.user_id || req.user?.id;
     const userRole = Number(req.user?.role);
-    const files = (req.files as Express.Multer.File[]) || [];
 
     let currentRole = userRole;
     if (userId) {
@@ -95,6 +95,15 @@ export const createAssignment = async (req: any, res: Response) => {
     res.json({ message: "สร้างผลงานสำเร็จ", assignmentId });
   } catch (err) {
     await conn.rollback();
+    if (files && files.length > 0) {
+      files.forEach((f: Express.Multer.File) => {
+        try {
+          if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+        } catch (unlinkErr) {
+          console.error("Failed to delete uploaded file:", unlinkErr);
+        }
+      });
+    }
     console.error("createAssignment error:", err);
     res.status(500).json({ message: "สร้างผลงานไม่สำเร็จ" });
   } finally {
@@ -220,12 +229,20 @@ export const getAssignment = async (req: any, res: Response) => {
       const fileCount = Number(row.file_count || 0);
       const hasFiles = fileCount > 0;
       const hasLink = Boolean(row.assignment_link && row.assignment_link.trim());
+      const resourceStatus = !hasFiles && !hasLink
+        ? "no_both"
+        : !hasFiles
+        ? "no_files"
+        : !hasLink
+        ? "no_link"
+        : "complete";
       return {
         ...row,
         file_count: fileCount,
         has_files: hasFiles,
         has_link: hasLink,
         has_no_resources: !hasFiles && !hasLink,
+        resource_status: resourceStatus,
       };
     });
 
@@ -365,10 +382,18 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
 
     const hasFiles = assignment.files.length > 0;
     const hasLink = Boolean(assignment.assignment_link && assignment.assignment_link.trim());
+    const resourceStatus = !hasFiles && !hasLink
+      ? "no_both"
+      : !hasFiles
+      ? "no_files"
+      : !hasLink
+      ? "no_link"
+      : "complete";
     (assignment as any).file_count = assignment.files.length;
     (assignment as any).has_files = hasFiles;
     (assignment as any).has_link = hasLink;
     (assignment as any).has_no_resources = !hasFiles && !hasLink;
+    (assignment as any).resource_status = resourceStatus;
 
     res.json({ data: assignment });
   } catch (err) {
@@ -624,6 +649,13 @@ export const getAssignmentByUser = async (req: any, res: Response) => {
       const hasFiles = fileCount > 0;
       const hasLink = Boolean(row.assignment_link && row.assignment_link.trim());
       const hasNoResources = !hasFiles && !hasLink;
+      const resourceStatus = !hasFiles && !hasLink
+        ? "no_both"
+        : !hasFiles
+        ? "no_files"
+        : !hasLink
+        ? "no_link"
+        : "complete";
 
       return {
         ...row,
@@ -631,6 +663,7 @@ export const getAssignmentByUser = async (req: any, res: Response) => {
         has_files: hasFiles,
         has_link: hasLink,
         has_no_resources: hasNoResources,
+        resource_status: resourceStatus,
         retention_days: retentionDays,
         expires_at: expiresAt,
         days_remaining: daysRemaining,
@@ -653,10 +686,10 @@ export const updateAssignment = async (req: Request, res: Response) => {
   const { assignmentId } = req.params;
   const userId = (req as any).user?.user_id || (req as any).user?.id;
   const userRole = Number((req as any).user?.role);
+  const files = ((req as any).files as Express.Multer.File[]) || [];
 
   try {
     const { class_id, title, detail, link, work_type } = req.body;
-    const files = (req.files as Express.Multer.File[]) || [];
 
     let deletedIds: number[] = [];
 
@@ -766,6 +799,15 @@ export const updateAssignment = async (req: Request, res: Response) => {
     res.json({ message: "แก้ไขผลงานสำเร็จ" });
   } catch (err) {
     await conn.rollback();
+    if (files && files.length > 0) {
+      files.forEach((f: Express.Multer.File) => {
+        try {
+          if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+        } catch (unlinkErr) {
+          console.error("Failed to delete uploaded file:", unlinkErr);
+        }
+      });
+    }
     console.error("updateAssignment error:", err);
     res.status(500).json({ message: "แก้ไขผลงานไม่สำเร็จ" });
   } finally {
@@ -842,25 +884,47 @@ export const deleteAssignment = async (req: Request, res: Response) => {
 
 export const searchAssignments = async (req: Request, res: Response) => {
   const search = (req.query.search as string)?.trim();
-  if (!search) {
-    return res.json({ data: [] });
-  }
-
-  const keyword = `%${search}%`;
-  const buddhistYearMatch = search.match(/(\d{4})/);
-  let ceYear: number | null = null;
-  if (buddhistYearMatch) {
-    const yearNum = parseInt(buddhistYearMatch[1], 10);
-    if (yearNum >= 2500) {
-      ceYear = yearNum - 543;
-    }
-  }
-
-  const yearCondition = ceYear !== null ? `OR YEAR(a.created_datetime) = ?` : ``;
-  const yearParams = ceYear !== null ? [ceYear] : [];
-
   const conn = await db.getConnection();
+
   try {
+    if (!search) {
+      // ดึงผลงานที่มีผู้เข้าชมเยอะที่สุดสำหรับแสดงที่หน้าแรก (Home)
+      const [rows]: any = await conn.execute(
+        `
+        SELECT 
+          a.assignment_id,
+          a.assignment_name,
+          a.assignment_type,
+          a.assignment_detail,
+          a.created_datetime,
+          a.view_cnt,
+          a.class_id,
+          c.class_name,
+          u.user_name AS author_name
+        FROM class_assignments a
+        INNER JOIN classes c ON c.class_id = a.class_id AND c.deleted_flg = 0
+        LEFT JOIN users u ON u.user_id = a.created_by
+        WHERE a.deleted_flg = 0
+        ORDER BY a.view_cnt DESC, a.created_datetime DESC
+        LIMIT 12
+        `
+      );
+      return res.json({ data: rows || [] });
+    }
+
+    const keyword = `%${search}%`;
+    const buddhistYearMatch = search.match(/(\d{4})/);
+    let ceYear: number | null = null;
+    if (buddhistYearMatch) {
+      const yearNum = parseInt(buddhistYearMatch[1], 10);
+      if (yearNum >= 2500) {
+        ceYear = yearNum - 543;
+      }
+    }
+
+    const yearCondition = ceYear !== null ? `OR YEAR(a.created_datetime) = ?` : ``;
+    const yearParams = ceYear !== null ? [ceYear] : [];
+
     const [rows]: any = await conn.execute(
       `
       SELECT 
@@ -919,12 +983,37 @@ export const checkAssignmentLink = async (req: Request, res: Response) => {
 
   try {
     const parsed = new URL(testUrl);
-    if (!parsed.hostname || !parsed.hostname.includes(".")) {
+    if (!["http:", "https:"].includes(parsed.protocol)) {
       return res.json({
         is_healthy: false,
         status_code: null,
-        reason: "invalid_domain",
-        message: "รูปแบบโดเมนหรือ URL ไม่ถูกต้อง",
+        reason: "invalid_protocol",
+        message: "อนุญาตเฉพาะ URL แบบ http:// หรือ https:// เท่านั้น",
+        tested_url: testUrl,
+      });
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    const isPrivateOrLoopback =
+      hostname === "localhost" ||
+      hostname.endsWith(".localhost") ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname === "::1" ||
+      hostname === "[::1]" ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^169\.254\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      !hostname.includes(".");
+
+    if (isPrivateOrLoopback) {
+      return res.json({
+        is_healthy: false,
+        status_code: null,
+        reason: "disallowed_host",
+        message: "ไม่อนุญาตให้ตรวจสอบที่อยู่ IP ภายในหรือ Localhost เพื่อความปลอดภัย",
         tested_url: testUrl,
       });
     }

@@ -93,11 +93,13 @@ function UserManagement() {
     }
   };
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.user_name.toLowerCase().includes(search.toLowerCase()) ||
-      u.user_id.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filteredUsers = users.filter((u) => {
+    const s = search.toLowerCase();
+    const name = (u.user_name || "").toLowerCase();
+    const id = (u.user_id || "").toLowerCase();
+    const email = (u.email || "").toLowerCase();
+    return name.includes(s) || id.includes(s) || email.includes(s);
+  });
 
   if (loading) {
     return (

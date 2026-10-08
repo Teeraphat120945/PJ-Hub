@@ -62,10 +62,13 @@ function Home() {
         const query = search.trim();
         const [classesData, assignmentsData] = await Promise.all([
           fetchClasses(query || undefined),
-          query ? searchAssignments(query) : Promise.resolve([]),
+          searchAssignments(query || undefined),
         ]);
         setClasses(classesData || []);
-        setAssignments(assignmentsData || []);
+        const sortedAssignments = (!query && assignmentsData)
+          ? [...assignmentsData].sort((a, b) => (b.view_cnt || 0) - (a.view_cnt || 0))
+          : (assignmentsData || []);
+        setAssignments(sortedAssignments);
         setCurrentPage(1);
       } catch (err) {
         console.error(err);
@@ -84,10 +87,13 @@ function Home() {
       const query = search.trim();
       const [classesData, assignmentsData] = await Promise.all([
         fetchClasses(query || undefined),
-        query ? searchAssignments(query) : Promise.resolve([]),
+        searchAssignments(query || undefined),
       ]);
       setClasses(classesData || []);
-      setAssignments(assignmentsData || []);
+      const sortedAssignments = (!query && assignmentsData)
+        ? [...assignmentsData].sort((a, b) => (b.view_cnt || 0) - (a.view_cnt || 0))
+        : (assignmentsData || []);
+      setAssignments(sortedAssignments);
       setCurrentPage(1);
       toast.success("ลบรายวิชาสำเร็จ");
     } catch (err: any) {
@@ -133,50 +139,52 @@ function Home() {
         </div>
       </div>
 
-      {isSearching && (
-        <div className="home-search-meta-bar">
-          <div className="search-filter-tabs">
-            <button
-              className={`search-tab-btn ${activeTab === "all" ? "active" : ""}`}
-              onClick={() => setActiveTab("all")}
-            >
-              ทั้งหมด ({classes.length + assignments.length})
-            </button>
-            <button
-              className={`search-tab-btn ${activeTab === "classes" ? "active" : ""}`}
-              onClick={() => setActiveTab("classes")}
-            >
-              <FiBookOpen size={14} /> รายวิชา ({classes.length})
-            </button>
-            <button
-              className={`search-tab-btn ${activeTab === "assignments" ? "active" : ""}`}
-              onClick={() => setActiveTab("assignments")}
-            >
-              <FiLayers size={14} /> ผลงาน ({assignments.length})
-            </button>
-          </div>
+      <div className="home-search-meta-bar">
+        <div className="search-filter-tabs">
+          <button
+            className={`search-tab-btn ${activeTab === "all" ? "active" : ""}`}
+            onClick={() => setActiveTab("all")}
+          >
+            ทั้งหมด ({classes.length + assignments.length})
+          </button>
+          <button
+            className={`search-tab-btn ${activeTab === "classes" ? "active" : ""}`}
+            onClick={() => setActiveTab("classes")}
+          >
+            <FiBookOpen size={14} /> รายวิชา ({classes.length})
+          </button>
+          <button
+            className={`search-tab-btn ${activeTab === "assignments" ? "active" : ""}`}
+            onClick={() => setActiveTab("assignments")}
+          >
+            {isSearching ? <FiLayers size={14} /> : <FiEye size={14} />} {isSearching ? "ผลงานที่พบ" : "ผลงานที่มีผู้เข้าชมเยอะที่สุด"} ({assignments.length})
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* ส่วนแสดงผลงานที่พบ (เมื่อมีการค้นหา) */}
-      {isSearching && (activeTab === "all" || activeTab === "assignments") && assignments.length > 0 && (
+      {/* ส่วนแสดงผลงาน (ผลงานที่พบเมื่อค้นหา หรือ ผลงานที่มีผู้เข้าชมเยอะที่สุดเมื่อดูหน้าแรกปกติ) */}
+      {(activeTab === "all" || activeTab === "assignments") && assignments.length > 0 && (
         <div className="home-search-section">
           <div className="home-section-header">
             <div className="section-title-group">
               <div className="section-icon-box assignment-accent">
-                <FiLayers size={22} />
+                {isSearching ? <FiLayers size={22} /> : <FiEye size={22} />}
               </div>
               <div>
-                <h2 className="section-main-title">ผลงานที่พบ</h2>
+                <h2 className="section-main-title">
+                  {isSearching ? "ผลงานที่พบ" : "ผลงานที่มีผู้เข้าชมเยอะที่สุด"}
+                </h2>
                 <p className="section-subtitle">
-                  พบผลงานที่ตรงกับคำค้นหา "{search}" ทั้งหมด {assignments.length} ชิ้น
+                  {isSearching
+                    ? `พบผลงานที่ตรงกับคำค้นหา "${search}" ทั้งหมด ${assignments.length} ชิ้น`
+                    : `รวบรวมผลงานและโครงงานในการเรียนรู้ที่มียอดผู้เข้าชมสูงสุด (${assignments.length} ชิ้น)`}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="home-assignment-grid">
-            {assignments.map((item) => (
+            {assignments.map((item, index) => (
               <div
                 key={item.assignment_id}
                 className="home-assignment-search-card"
@@ -193,6 +201,21 @@ function Home() {
                     <span className="assignment-type-tag">
                       {item.assignment_type || "ผลงาน"}
                     </span>
+                    {!isSearching && index === 0 && (
+                      <span className="assignment-rank-badge rank-1" title="ผลงานยอดนิยมอันดับ 1">
+                        🏆 อันดับ 1
+                      </span>
+                    )}
+                    {!isSearching && index === 1 && (
+                      <span className="assignment-rank-badge rank-2" title="ผลงานยอดนิยมอันดับ 2">
+                        🥈 อันดับ 2
+                      </span>
+                    )}
+                    {!isSearching && index === 2 && (
+                      <span className="assignment-rank-badge rank-3" title="ผลงานยอดนิยมอันดับ 3">
+                        🥉 อันดับ 3
+                      </span>
+                    )}
                     {item.created_datetime && (
                       <span className="class-year-badge">
                         <FiCalendar size={12} />
@@ -208,32 +231,50 @@ function Home() {
 
                 <div className="home-assignment-search-content">
                   <h3 className="assignment-search-title">{item.assignment_name}</h3>
-                  <p className="assignment-search-class-name">
-                    รายวิชา: {item.class_name}
-                  </p>
+                  <div className="assignment-search-class-name">
+                    <span className="class-label">รายวิชา:</span>
+                    <span className="class-name-text" title={item.class_name}>
+                      {item.class_name}
+                    </span>
+                  </div>
                   {item.assignment_detail && (
                     <p className="assignment-search-describe">
                       {item.assignment_detail}
                     </p>
                   )}
-                  {item.author_name && (
-                    <p className="assignment-search-author">
-                      <FiUser size={13} /> โดย: {item.author_name}
-                    </p>
+                  {item.author_name && item.author_name.trim() && (
+                    <div className="assignment-search-author">
+                      <div className="author-avatar-sm">
+                        {item.author_name.trim().charAt(0).toUpperCase()}
+                      </div>
+                      <span className="author-info">
+                        <span className="author-label">โดย:</span>
+                        <span className="author-name">{item.author_name.trim()}</span>
+                      </span>
+                    </div>
                   )}
                 </div>
 
                 <div className="home-assignment-footer">
-                  <span className="view-count">
-                    <FiEye size={13} /> {formatViewCount(item.view_cnt)}
+                  <span className="assignment-view-count">
+                    <FiEye size={13} className="view-icon" />
+                    <span>{formatViewCount(item.view_cnt)}</span>
                   </span>
-                  <span className="view-detail">
-                    เข้าชมผลงาน <FiArrowRight className="arrow-icon" />
+                  <span className="assignment-view-link">
+                    เข้าชมผลงาน <FiArrowRight className="arrow-icon" size={14} />
                   </span>
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {activeTab === "assignments" && assignments.length === 0 && (
+        <div className="empty-classes-box">
+          <FiLayers className="empty-icon" size={48} />
+          <h3>ไม่พบข้อมูลผลงาน</h3>
+          <p>{isSearching ? `ไม่พบผลงานที่ตรงกับคำค้นหา "${search}"` : "ยังไม่มีผลงานในระบบในขณะนี้"}</p>
         </div>
       )}
 

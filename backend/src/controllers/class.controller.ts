@@ -53,12 +53,50 @@ export const create = async (req: Request, res: Response) => {
   const conn = await db.getConnection();
   try {
     const [existing]: any = await conn.execute(
-      "SELECT class_id FROM classes WHERE class_id = ? AND deleted_flg = 0",
+      "SELECT class_id, deleted_flg FROM classes WHERE class_id = ?",
       [classId.trim()]
     );
 
     if (existing.length > 0) {
-      return res.status(400).json({ message: "รหัสรายวิชานี้มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น" });
+      if (existing[0].deleted_flg === 0) {
+        return res.status(400).json({ message: "รหัสรายวิชานี้มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น" });
+      }
+
+      // หากเคยถูกลบไว้ ให้กู้คืนและอัปเดตข้อมูลรายวิชาใหม่
+      await conn.beginTransaction();
+
+      await conn.execute(
+        `UPDATE classes
+         SET class_name = ?, class_describe = ?, deleted_flg = 0, created_by = ?, updated_datetime = NOW()
+         WHERE class_id = ?`,
+        [className.trim(), describe?.trim() || "", userId, classId.trim()]
+      );
+
+      await conn.execute(
+        `INSERT INTO class_users
+        (class_id, user_id, view_flg, deleted_flg, created_datetime)
+        VALUES (?, ?, 0, 0, NOW())
+        ON DUPLICATE KEY UPDATE deleted_flg = 0, view_flg = 0`,
+        [classId.trim(), userId],
+      );
+
+      const [admins]: any = await conn.execute(
+        `SELECT user_id FROM users WHERE role_flg = 0 AND deleted_flg = 0`,
+      );
+
+      for (const admin of admins) {
+        if (String(admin.user_id) === String(userId)) continue;
+        await conn.execute(
+          `INSERT INTO class_users
+          (class_id, user_id, view_flg, deleted_flg, created_datetime)
+          VALUES (?, ?, 0, 0, NOW())
+          ON DUPLICATE KEY UPDATE deleted_flg = 0, view_flg = 0`,
+          [classId.trim(), admin.user_id],
+        );
+      }
+
+      await conn.commit();
+      return res.status(201).json({ message: "กู้คืนและเปิดใช้งานรายวิชาสำเร็จ" });
     }
 
     await conn.beginTransaction();
@@ -77,7 +115,8 @@ export const create = async (req: Request, res: Response) => {
     await conn.execute(
       `INSERT INTO class_users
       (class_id, user_id, view_flg, deleted_flg, created_datetime)
-      VALUES (?, ?, 0, 0, NOW())`,
+      VALUES (?, ?, 0, 0, NOW())
+      ON DUPLICATE KEY UPDATE deleted_flg = 0, view_flg = 0`,
       [classId.trim(), userId],
     );
 
@@ -87,7 +126,8 @@ export const create = async (req: Request, res: Response) => {
       await conn.execute(
         `INSERT INTO class_users
         (class_id, user_id, view_flg, deleted_flg, created_datetime)
-        VALUES (?, ?, 0, 0, NOW())`,
+        VALUES (?, ?, 0, 0, NOW())
+        ON DUPLICATE KEY UPDATE deleted_flg = 0, view_flg = 0`,
         [classId.trim(), admin.user_id],
       );
     }

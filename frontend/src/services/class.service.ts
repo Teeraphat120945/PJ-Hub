@@ -1,4 +1,6 @@
-const API = "http://localhost:3000/api/class";
+import { API_BASE_URL, fetchWithAuth } from "../config/api";
+
+const API = `${API_BASE_URL}/api/class`;
 
 export const authHeader = (): Record<string, string> => {
   const token = localStorage.getItem("token");
@@ -36,7 +38,7 @@ export const createClass = async (
   className: string,
   describe?: string,
 ): Promise<void> => {
-  const res = await fetch(`${API}/create`, {
+  const res = await fetchWithAuth(`${API}/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -59,7 +61,7 @@ export const fetchClasses = async (search?: string) => {
 
   const token = localStorage.getItem("token");
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     headers: token
       ? { Authorization: `Bearer ${token}` }
       : {},
@@ -75,7 +77,7 @@ export const fetchClasses = async (search?: string) => {
 };
 
 export const fetchClassDetail = async (classId: string): Promise<Class> => {
-  const res = await fetch(`${API}/getclass/${classId}`, {
+  const res = await fetchWithAuth(`${API}/getclass/${classId}`, {
     headers: authHeader(),
   });
 
@@ -93,7 +95,7 @@ export const updateClass = async (
   className: string,
   describe?: string,
 ): Promise<void> => {
-  const res = await fetch(`${API}/update/${classId}`, {
+  const res = await fetchWithAuth(`${API}/update/${classId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -113,7 +115,7 @@ export const updateClass = async (
 };
 
 export const getClassesByUser = async (): Promise<Class[]> => {
-  const res = await fetch(`${API}/getclass/by-user`, {
+  const res = await fetchWithAuth(`${API}/getclass/by-user`, {
     headers: authHeader(),
   });
 
@@ -127,7 +129,7 @@ export const getClassesByUser = async (): Promise<Class[]> => {
 };
 
 export const getTeacherClasses = async (): Promise<TeacherClassItem[]> => {
-  const res = await fetch(`${API}/getclass/by-teacher`, {
+  const res = await fetchWithAuth(`${API}/getclass/by-teacher`, {
     headers: authHeader(),
   });
 
@@ -143,7 +145,7 @@ export const getTeacherClasses = async (): Promise<TeacherClassItem[]> => {
 export const deleteClass = async (
   classId: string
 ): Promise<void> => {
-  const res = await fetch(
+  const res = await fetchWithAuth(
     `${API}/delete/${classId}`,
     {
       method: "DELETE",

@@ -8,9 +8,24 @@ interface ProtectedRouteProps {
   requireAuth?: boolean;
 }
 
+const isTokenExpired = (rawToken: string | null): boolean => {
+  if (!rawToken) return true;
+  try {
+    const parts = rawToken.split(".");
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Route Guard Component เพื่อตรวจสอบสิทธิ์การเข้าถึงหน้าเว็บ (Authentication & RBAC)
- * - หากยังไม่ Login: Redirect ไปยัง /login พร้อมแสดงแจ้งเตือน
+ * - หากยังไม่ Login หรือ Token หมดอายุ: Redirect ไปยัง /login พร้อมแสดงแจ้งเตือน
  * - หากสิทธิ์ (Role) ไม่ถึง: Redirect กลับไปยัง / พร้อมแจ้งเตือนว่าไม่มีสิทธิ์
  * - หากเป็นหน้า Guest-only (requireAuth = false): หาก Login อยู่แล้วจะ Redirect ไปยัง /
  */
@@ -20,7 +35,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAuth = true,
 }) => {
   const location = useLocation();
-  const token = localStorage.getItem("token");
+  const rawToken = localStorage.getItem("token");
+  const isExpired = isTokenExpired(rawToken);
+
+  let token = rawToken;
+  if (rawToken && isExpired) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("role");
+    localStorage.removeItem("role_flg");
+    token = null;
+  }
+
   const storedRole = localStorage.getItem("role") || localStorage.getItem("role_flg");
   const role = storedRole !== null && storedRole !== undefined ? Number(storedRole) : null;
 

@@ -43,6 +43,7 @@ type AssignmentItem = {
   has_files?: boolean;
   has_link?: boolean;
   has_no_resources?: boolean;
+  resource_status?: "no_both" | "no_files" | "no_link" | "complete";
 };
 
 function AssignmentManagement() {
@@ -261,14 +262,42 @@ function AssignmentManagement() {
                       <FiShield size={11} /> จัดเก็บถาวร
                     </span>
 
-                    {a.has_no_resources && (
-                      <span
-                        className="assignment-no-resource-chip"
-                        title="⚠️ ผลงานนี้ยังไม่มีไฟล์แนบและไม่มีลิงก์ภายนอก"
-                      >
-                        <FiAlertTriangle size={11} /> ไม่มีไฟล์/ลิงก์
-                      </span>
-                    )}
+                    {(() => {
+                      const hasFiles = Boolean(a.has_files ?? (a.file_count && a.file_count > 0));
+                      const hasLink = Boolean(a.has_link ?? (a.assignment_link && a.assignment_link.trim().length > 0));
+
+                      if (!hasFiles && !hasLink) {
+                        return (
+                          <span
+                            className="assignment-no-resource-chip chip-no-both"
+                            title="⚠️ ผลงานนี้ยังไม่มีทั้งไฟล์แนบและไม่มีลิงก์ภายนอก"
+                          >
+                            <FiAlertTriangle size={11} /> ไม่มีไฟล์/ลิงก์
+                          </span>
+                        );
+                      }
+                      if (!hasFiles) {
+                        return (
+                          <span
+                            className="assignment-no-resource-chip chip-no-file"
+                            title="⚠️ ผลงานนี้ยังไม่มีไฟล์แนบ"
+                          >
+                            <FiAlertTriangle size={11} /> ไม่มีไฟล์
+                          </span>
+                        );
+                      }
+                      if (!hasLink) {
+                        return (
+                          <span
+                            className="assignment-no-resource-chip chip-no-link"
+                            title="⚠️ ผลงานนี้ยังไม่มีลิงก์ภายนอก"
+                          >
+                            <FiAlertTriangle size={11} /> ไม่มีลิงก์
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
 
                     {expiry && (
                       <span
