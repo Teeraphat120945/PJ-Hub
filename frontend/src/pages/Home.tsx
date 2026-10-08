@@ -162,7 +162,6 @@ function Home() {
         </div>
       </div>
 
-      {/* ส่วนแสดงผลงาน (ผลงานที่พบเมื่อค้นหา หรือ ผลงานที่มีผู้เข้าชมเยอะที่สุดเมื่อดูหน้าแรกปกติ) */}
       {(activeTab === "all" || activeTab === "assignments") && assignments.length > 0 && (
         <div className="home-search-section">
           <div className="home-section-header">
@@ -278,7 +277,6 @@ function Home() {
         </div>
       )}
 
-      {/* ส่วนแสดงรายวิชา */}
       {(activeTab === "all" || activeTab === "classes") && (
         <div className="home-classes-section">
           <div className="home-section-header">
@@ -380,7 +378,6 @@ function Home() {
                         </p>
                       </div>
 
-                      {/* ไฮไลต์ถ้าวิชานี้ถูกค้นพบเพราะมีผลงานประเภทตรงกับคำค้นหา */}
                       {isSearching && item.matched_types && (
                         <div className="class-matched-tag-box" title={`มีผลงานประเภท ${item.matched_types} ในรายวิชานี้`}>
                           <FiTag size={13} />
@@ -432,7 +429,6 @@ function Home() {
         </div>
       )}
 
-      {/* ถ้าค้นหาแล้วไม่พบอะไรเลยทั้งผลงานและรายวิชา */}
       {isSearching && classes.length === 0 && assignments.length === 0 && (
         <div className="empty-classes-box search-empty-box">
           <FiSearch className="empty-icon" size={48} />

@@ -39,6 +39,15 @@ function Login() {
     const errorParam = searchParams.get("error");
     const demoParam = searchParams.get("oauth_demo");
     const expiredParam = searchParams.get("expired");
+    const resetParam = searchParams.get("reset");
+    const prefillUser = searchParams.get("identifier");
+
+    if (resetParam === "success") {
+      toast.success("เปลี่ยนรหัสผ่านสำเร็จเรียบร้อยแล้ว กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่");
+      if (prefillUser) {
+        setIdentifier(prefillUser);
+      }
+    }
 
     if (expiredParam) {
       toast.warn("เซสชันการเข้าสู่ระบบหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
@@ -67,7 +76,6 @@ function Login() {
       localStorage.setItem("role", String(role || 3));
       localStorage.setItem("role_flg", String(role || 3));
 
-      // ล้าง token และข้อมูลผู้ใช้ออกจาก URL และ browser history ทันทีเพื่อความปลอดภัย
       window.history.replaceState({}, document.title, window.location.pathname);
 
       toast.success(`เข้าสู่ระบบด้วย ${provider} สำเร็จ`);
@@ -278,7 +286,12 @@ function Login() {
 
           {/* Password */}
           <div className="auth-input-group">
-            <label>รหัสผ่าน</label>
+            <div className="auth-label-row">
+              <label htmlFor="login-password">รหัสผ่าน</label>
+              <Link to="/forgot-password" className="forgot-password-link" title="คลิกเพื่อรีเซ็ตหรือเปลี่ยนรหัสผ่าน">
+                ลืมรหัสผ่าน?
+              </Link>
+            </div>
             <div className={`auth-input-wrapper ${passwordTouched ? (passwordError ? "field-error" : "field-success") : ""}`}>
               <FiLock className="input-icon" size={18} />
               <input
@@ -315,8 +328,13 @@ function Login() {
         </form>
 
         <div className="auth-footer">
-          <span>ยังไม่มีบัญชีผู้ใช้? </span>
-          <Link to="/register">สมัครสมาชิกที่นี่</Link>
+          <div>
+            <span>ยังไม่มีบัญชีผู้ใช้? </span>
+            <Link to="/register">สมัครสมาชิกที่นี่</Link>
+          </div>
+          <div className="auth-footer-sub">
+            <Link to="/forgot-password">เปลี่ยนรหัสผ่าน / ลืมรหัสผ่าน</Link>
+          </div>
         </div>
       </div>
 

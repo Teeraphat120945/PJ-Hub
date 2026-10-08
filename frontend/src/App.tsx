@@ -3,6 +3,7 @@ import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import UserManagement from "./pages/UserManagement";
 import CreateClass from "./pages/class/CreateClass";
 import ClassUserManagement from "./pages/class/ClassUserManagement";
@@ -23,7 +24,6 @@ function App() {
       <ToastContainer position="top-right" autoClose={2500} />
 
       <Routes>
-        {/* หน้าสำหรับผู้ที่ยังไม่ได้เข้าสู่ระบบ (Guest Only) */}
         <Route
           path="/login"
           element={
@@ -40,14 +40,28 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/forgot-password"
+          element={
+            <ProtectedRoute requireAuth={false}>
+              <ForgotPassword />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/forget-password"
+          element={
+            <ProtectedRoute requireAuth={false}>
+              <ForgotPassword />
+            </ProtectedRoute>
+          }
+        />
 
         <Route element={<MainLayout />}>
-          {/* หน้าสาธารณะ ทุกคนเข้าชมได้ */}
           <Route index element={<Home />} />
           <Route path="/class/:class_id" element={<ClassDetail />} />
           <Route path="/assignment/:assignment_id" element={<AssignmentDetail />} />
 
-          {/* สิทธิ์เฉพาะผู้ดูแลระบบ (Admin: Role 0) */}
           <Route
             path="/UserManagement"
             element={
@@ -57,7 +71,6 @@ function App() {
             }
           />
 
-          {/* สิทธิ์สำหรับผู้ดูแลระบบและอาจารย์ (Admin: 0, Teacher: 1) */}
           <Route
             path="/CreateClass"
             element={
@@ -91,7 +104,6 @@ function App() {
             }
           />
 
-          {/* สิทธิ์สำหรับผู้ใช้ที่มีสิทธิ์ส่งผลงาน (Admin: 0, Teacher: 1, Student: 2) */}
           <Route
             path="/assignments"
             element={

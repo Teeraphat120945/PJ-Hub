@@ -29,10 +29,6 @@ export const authMiddleware = (
   }
 };
 
-/**
- * Middleware สำหรับตรวจสอบ Role ของผู้ใช้งาน
- * @param allowedRoles รายการ Role ที่ได้รับอนุญาต (เช่น 0 = Admin, 1 = Teacher, 2 = Student)
- */
 export const authorizeRoles = (...allowedRoles: number[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {

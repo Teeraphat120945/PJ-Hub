@@ -785,7 +785,7 @@
 }
 
 /* ===================================================
-   แผงข้อมูลการดูแลรักษาและอายุทรัพยากร (Resource Maintenance & Lifecycle)
+   Resource Maintenance & Lifecycle Panel
    =================================================== */
 .lifecycle-panel {
   background: linear-gradient(145deg, #fbf9fe 0%, #ffffff 100%);

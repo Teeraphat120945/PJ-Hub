@@ -5,8 +5,7 @@ import { db } from "../db";
 const JWT_SECRET = process.env.JWT_SECRET || "classroom_jwt_secret_key_2026";
 
 /**
- * ฟังก์ชันซิงค์แอดมินทุกคน (รวมถึงผู้ได้รับการแต่งตั้งใหม่ในภายหลัง) เข้า class_users
- * เพื่อให้ Admin ทุกคนมีสิทธิ์เข้าถึง ดูแล และเห็นข้อมูลรายวิชาทั้งหมดเหมือนกับ Admin เดิม
+ * Sync all admins to class_users
  */
 export const syncAdminsToClasses = async (conn: any) => {
   try {
@@ -62,7 +61,6 @@ export const create = async (req: Request, res: Response) => {
         return res.status(400).json({ message: "รหัสรายวิชานี้มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น" });
       }
 
-      // หากเคยถูกลบไว้ ให้กู้คืนและอัปเดตข้อมูลรายวิชาใหม่
       await conn.beginTransaction();
 
       await conn.execute(
@@ -222,13 +220,12 @@ export const view = async (req: Request, res: Response) => {
     } else {
       const keyword = `%${search}%`;
 
-      // ตรวจสอบว่าคำค้นหามีปี พ.ศ. (ตัวเลข 4 หลัก ≥ 2500) หรือไม่
       const buddhistYearMatch = search.match(/(\d{4})/);
       let ceYear: number | null = null;
       if (buddhistYearMatch) {
         const yearNum = parseInt(buddhistYearMatch[1], 10);
         if (yearNum >= 2500) {
-          ceYear = yearNum - 543; // แปลง พ.ศ. → ค.ศ.
+          ceYear = yearNum - 543;
         }
       }
 
@@ -480,7 +477,6 @@ export const getClassesByUser = async (req: any, res: Response) => {
 
     let rows: any;
     if (currentRole === 0) {
-      // ผู้ดูแลระบบ (Admin): สามารถเข้าถึงและเลือกรายวิชาได้ทุกรายวิชาในระบบ
       [rows] = await conn.query(
         `
         SELECT c.class_id, c.class_name, c.class_describe, c.created_datetime
@@ -517,10 +513,8 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
   const tokenRole = Number((req as any).user?.role);
 
   try {
-    // 1. ซิงค์สิทธิ์ Admin ทุกคนเข้า class_users ทุกวิชาโดยอัตโนมัติ
     await syncAdminsToClasses(conn);
 
-    // 2. ดึง role ล่าสุดจาก DB
     let currentRole = tokenRole;
     if (userId) {
       const [userRows]: any = await conn.query(
@@ -534,7 +528,6 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
 
     let rows: any;
     if (currentRole === 0) {
-      // สำหรับผู้ดูแลระบบ (Admin): มีสิทธิ์กำกับดูแลและเห็นรายวิชาทั้งหมดในระบบที่ยังไม่ถูกลบ
       [rows] = await conn.query(
         `
         SELECT 
@@ -559,7 +552,6 @@ export const getClassesByTeacher = async (req: Request, res: Response) => {
         `
       );
     } else {
-      // สำหรับอาจารย์ (Teacher): เห็นเฉพาะรายวิชาที่ตนเองรับผิดชอบหรือเป็นผู้สร้าง
       [rows] = await conn.query(
         `
         SELECT 

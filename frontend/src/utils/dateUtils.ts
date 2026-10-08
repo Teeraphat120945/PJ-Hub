@@ -1,5 +1,5 @@
 /**
- * Utility ฟังก์ชันสำหรับแปลงและคำนวณ วันที่ ปี พ.ศ. และอายุการจัดเก็บทรัพยากร (Retention & Lifecycle)
+ * Utility functions for date conversion, Buddhist era year, and resource retention & lifecycle calculation
  */
 
 const THAI_MONTHS_FULL = [
@@ -48,7 +48,7 @@ export const getThaiYearNumber = (date?: string | Date | null): number | null =>
 };
 
 /**
- * จัดรูปแบบวันที่แบบเต็มภาษาไทย พร้อมปี พ.ศ. เช่น "11 กันยายน พ.ศ. 2569"
+ * Format full date in Thai with Buddhist era year, e.g. "11 กันยายน พ.ศ. 2569"
  */
 export const formatThaiFullDate = (date?: string | Date | null): string => {
   if (!date) return "";
@@ -61,7 +61,7 @@ export const formatThaiFullDate = (date?: string | Date | null): string => {
 };
 
 /**
- * จัดรูปแบบวันที่แบบย่อภาษาไทย พร้อมปี พ.ศ. เช่น "11 ก.ย. 2569"
+ * Format short date in Thai with Buddhist era year, e.g. "11 ก.ย. 2569"
  */
 export const formatThaiShortDate = (date?: string | Date | null): string => {
   if (!date) return "";
@@ -92,10 +92,10 @@ export type ExpiryInfo = {
 };
 
 /**
- * คำนวณรอบการดูแลรักษาและทบทวนคุณภาพผลงาน
- * ไฟล์แนบจะถูกจัดเก็บบนระบบอย่างถาวร ส่วนระยะเวลา 365 วันคือรอบทบทวนคุณภาพและความถูกต้องของลิงก์ภายนอก
- * @param createdDateStr วันที่จัดทำ/อัปโหลดผลงาน
- * @param retentionDays จำนวนวันของรอบทบทวนคุณภาพ (ค่าเริ่มต้น 365 วัน / 1 ปีการศึกษา)
+ * Calculate maintenance and review cycle for assignment resources
+ * Attached files are permanently stored; 365 days is the annual review cycle for external links
+ * @param createdDateStr Date of assignment creation/upload
+ * @param retentionDays Review cycle duration in days (default 365 days / 1 academic year)
  */
 export const calculateExpiryInfo = (
   createdDateStr?: string | Date | null,

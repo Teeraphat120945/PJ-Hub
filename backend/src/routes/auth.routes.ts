@@ -10,6 +10,10 @@ import {
   microsoftCallback,
   demoSocialLogin,
   updateEmail,
+  requestPasswordReset,
+  verifyResetOtp,
+  resetPassword,
+  changePassword,
 } from "../controllers/auth.controller";
 
 import {
@@ -67,6 +71,30 @@ router.get(
 router.post(
   "/demo-social-login",
   demoSocialLogin
+);
+
+/* ===============================
+   Password Reset & Change
+================================ */
+
+router.post(
+  "/forgot-password/request",
+  requestPasswordReset
+);
+
+router.post(
+  "/forgot-password/verify-otp",
+  verifyResetOtp
+);
+
+router.post(
+  "/forgot-password/reset",
+  resetPassword
+);
+
+router.post(
+  "/change-password",
+  changePassword
 );
 
 export default router;

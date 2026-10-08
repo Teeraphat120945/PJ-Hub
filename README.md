@@ -399,6 +399,10 @@ API ทั้งหมดจะขึ้นต้นด้วย Base URL: `http
 | `GET` | `/api/auth/microsoft/url` | สาธารณะ | ดึง URL สำหรับล็อกอินผ่าน Microsoft OAuth |
 | `GET` | `/api/auth/microsoft/callback`| สาธารณะ | Callback รับ Auth Code จาก Microsoft |
 | `POST` | `/api/auth/demo-social-login` | สาธารณะ | จำลองการล็อกอินผ่าน Social Account สำหรับทดสอบ |
+| `POST` | `/api/auth/forgot-password/request` | สาธารณะ | ขอรหัสยืนยัน OTP เพื่อรีเซ็ตรหัสผ่าน (ส่ง `identifier`) |
+| `POST` | `/api/auth/forgot-password/verify-otp` | สาธารณะ | ตรวจสอบรหัส OTP 6 หลัก (ส่ง `resetToken`, `otp`) |
+| `POST` | `/api/auth/forgot-password/reset` | สาธารณะ | ตั้งรหัสผ่านใหม่หลังยืนยัน OTP (ส่ง `verifiedToken`, `newPassword`) |
+| `POST` | `/api/auth/change-password` | สาธารณะ / Token | เปลี่ยนรหัสผ่านโดยตรง (ส่ง `identifier`, `currentPassword`, `newPassword`) |
 
 ---
 

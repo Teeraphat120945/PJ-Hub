@@ -119,7 +119,6 @@ export const downloadAssignmentFile = async (req: Request, res: Response) => {
   const conn = await db.getConnection();
 
   try {
-    // 1. ค้นหาข้อมูลไฟล์ โครงงาน และรายวิชา
     const [rows]: any = await conn.query(
       `
       SELECT f.file_name, f.file_path, a.assignment_id, a.created_by AS assignment_created_by,
@@ -138,7 +137,6 @@ export const downloadAssignmentFile = async (req: Request, res: Response) => {
 
     const file = rows[0];
 
-    // 2. ดึง role ปัจจุบันจากฐานข้อมูล เพื่อให้ข้อมูลสิทธิ์เป็นปัจจุบันเสมอ
     let currentRole = tokenRole;
     if (userId) {
       const [userRows]: any = await conn.query(
@@ -172,7 +170,6 @@ export const downloadAssignmentFile = async (req: Request, res: Response) => {
       });
     }
 
-    // 3. ค้นหาตำแหน่งไฟล์จริงบนเครื่องเซิร์ฟเวอร์ (รองรับทั้ง CWD root และ CWD backend)
     const baseName = path.basename(file.file_path);
     const candidatePaths = [
       path.resolve(file.file_path),
@@ -288,7 +285,6 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
       return res.status(404).json({ message: "ไม่พบผลงาน" });
     }
 
-    // ตรวจสอบ role ล่าสุดจาก DB เพื่อความแม่นยำ
     let currentRole = tokenRole;
     if (userId) {
       const [userRows]: any = await conn.query(
@@ -405,16 +401,13 @@ export const getAssignmentDetail = async (req: any, res: Response) => {
 };
 
 /**
- * ดึงข้อมูลเบื้องต้นของผลงาน (Public - ไม่ต้อง login)
- * แสดงเฉพาะ: ชื่อผลงาน, คำอธิบาย, ชื่อเจ้าของ, ประเภท, รายวิชา, วันที่, ยอดเข้าชม
- * ซ่อน: ไฟล์แนบ, ลิงก์ผลงาน, สิทธิ์ต่างๆ
+ * Get public assignment details
  */
 export const getAssignmentPublicDetail = async (req: Request, res: Response) => {
   const conn = await db.getConnection();
   const { assignment_id } = req.params;
 
   try {
-    // เพิ่มยอดเข้าชม
     await conn.execute(
       `UPDATE class_assignments 
        SET view_cnt = view_cnt + 1 
@@ -468,7 +461,6 @@ export const getAssignmentPublicDetail = async (req: Request, res: Response) => 
       can_comment: false,
       can_edit: false,
       can_delete: false,
-      // ซ่อนข้อมูลที่ต้อง login
       assignment_link: null,
       files: [],
       file_count: 0,
@@ -506,11 +498,9 @@ export const getAssignmentByUser = async (req: any, res: Response) => {
 
     let rows: any;
     if (currentRole === 0) {
-      // ซิงค์สิทธิ์ Admin ทุกคนเข้า class_users ทุกวิชาโดยอัตโนมัติ
       await syncAdminsToClasses(conn);
 
       if (!onlyMe) {
-        // สำหรับผู้ดูแลระบบ (Admin): แสดงผลงานทั้งหมดในระบบจากผู้ใช้ทุกคนที่ยังไม่ถูกลบ
         [rows] = await conn.query(
           `
           SELECT 
@@ -547,7 +537,6 @@ export const getAssignmentByUser = async (req: any, res: Response) => {
           `
         );
       } else {
-        // แอดมินเลือกดูเฉพาะผลงานที่ตนเองสร้าง
         [rows] = await conn.query(
           `
           SELECT 
@@ -586,7 +575,6 @@ export const getAssignmentByUser = async (req: any, res: Response) => {
         );
       }
     } else {
-      // สำหรับผู้ใช้ทั่วไป (อาจารย์ / นิสิต): แสดงเฉพาะผลงานของตนเอง
       [rows] = await conn.query(
         `
         SELECT 
@@ -888,7 +876,6 @@ export const searchAssignments = async (req: Request, res: Response) => {
 
   try {
     if (!search) {
-      // ดึงผลงานที่มีผู้เข้าชมเยอะที่สุดสำหรับแสดงที่หน้าแรก (Home)
       const [rows]: any = await conn.execute(
         `
         SELECT 
@@ -1039,7 +1026,6 @@ export const checkAssignmentLink = async (req: Request, res: Response) => {
       responseStatus = resp.status;
       ok = resp.ok;
 
-      // บางบริการ (เช่น Google Drive, GitHub) ปฏิเสธ HEAD ด้วยรหัส 405 Method Not Allowed หรือ 400 ให้ fallback ด้วย GET สั้นๆ
       if (resp.status === 405 || resp.status === 400) {
         const getController = new AbortController();
         const getTimeoutId = setTimeout(() => getController.abort(), 6000);

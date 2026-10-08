@@ -83,7 +83,6 @@ const AssignmentDetail = () => {
     (isWorkOwner || isCourseInstructor)
   );
   const isStudentOrStaff = userRole === 0 || userRole === 1 || userRole === 2;
-  // ให้สิทธิ์ตาม can_access_resources ที่คำนวณจาก backend หรือ fallback ตาม role
   const canAccessResources = Boolean(
     assignment?.can_access_resources ?? isStudentOrStaff
   );
@@ -132,7 +131,6 @@ const AssignmentDetail = () => {
     if (!assignment_id) return;
 
     if (!token) {
-      // Guest mode: ดึงข้อมูลเบื้องต้นแบบ public
       fetchPublicData();
       return;
     }
@@ -167,7 +165,6 @@ const AssignmentDetail = () => {
         files: Array.isArray(res.files) ? res.files : [],
       });
 
-      // ตรวจสอบสถานะการเข้าถึงลิงก์ผลงานอัตโนมัติหากมีลิงก์แนบ
       if (res.assignment_link && res.assignment_link.trim()) {
         handleCheckLink(res.assignment_link);
       }
@@ -354,7 +351,6 @@ const AssignmentDetail = () => {
           )}
         </div>
 
-        {/* แสดงชื่อเจ้าของผลงาน และชื่อรายวิชา */}
         <div className="form-grid margin-top-16">
           {assignment.author_name && (
             <div className="field grid-6">
@@ -385,7 +381,6 @@ const AssignmentDetail = () => {
           </div>
         </div>
 
-        {/* แถบแจ้งเตือนให้ login สำหรับ Guest */}
         {isPublicView && (
           <div className="login-required" style={{ marginTop: 20 }}>
             <div className="login-required-card">
@@ -399,7 +394,6 @@ const AssignmentDetail = () => {
           </div>
         )}
 
-        {/* ⚠️ กล่องแจ้งเตือนเมื่อผลงานยังไม่มีไฟล์แนบและไม่มีลิงก์ภายนอก (เห็นเฉพาะเจ้าของผลงาน หรือ เจ้าของรายวิชา/Admin) */}
         {!isPublicView && hasNoResources && (isWorkOwner || isCourseInstructor) && (
           <div className="missing-resources-notice">
             <FiAlertTriangle size={18} className="notice-icon" />
@@ -533,7 +527,6 @@ const AssignmentDetail = () => {
                     <FiExternalLink size={16} /> เปิดลิงก์ผลงาน
                   </a>
 
-                  {/* ป้ายแสดงสถานะการเข้าถึงของลิงก์ */}
                   {checkingLink && (
                     <div className="link-status-chip checking">
                       <span className="mini-spinner" />
@@ -566,7 +559,6 @@ const AssignmentDetail = () => {
         </div>
         )}
 
-        {/* แผงข้อมูลการดูแลรักษาและอายุทรัพยากร (ฉบับกะทัดรัด Compact) */}
         {!isPublicView && (isWorkOwner || isCourseInstructor) && expiryInfo && (
           <div className="lifecycle-panel compact-lifecycle margin-top-20">
             <div className="lifecycle-header-compact">
@@ -621,7 +613,6 @@ const AssignmentDetail = () => {
               </div>
             </div>
 
-            {/* 🚨 แสดงกล่องแจ้งเตือนทันทีเมื่อลิงก์เสีย / เข้าถึงไม่ได้ แม้จะยังไม่ได้กดขยายรายละเอียด */}
             {assignment.assignment_link && linkCheckResult && !linkCheckResult.is_healthy && (
               <div className="maintenance-alert-banner compact-alert">
                 <div className="alert-banner-top">
@@ -660,7 +651,6 @@ const AssignmentDetail = () => {
               </div>
             )}
 
-            {/* รายละเอียดเพิ่มเติม (แสดงเมื่อกดขยาย) */}
             {isLifecycleExpanded && (
               <div className="lifecycle-expanded-content">
                 <div className="lifecycle-metrics-grid">

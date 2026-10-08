@@ -3,7 +3,7 @@ export const API_BASE_URL = (
 ).replace(/\/+$/, "");
 
 /**
- * ดึง Header สำหรับ Authentication (Bearer token)
+ * Get authentication header (Bearer token)
  */
 export const getAuthHeader = (additionalHeaders: HeadersInit = {}): HeadersInit => {
   const token = localStorage.getItem("token");
@@ -17,7 +17,7 @@ export const getAuthHeader = (additionalHeaders: HeadersInit = {}): HeadersInit 
 };
 
 /**
- * ล้างข้อมูล Session ทั้งหมดเมื่อ Token หมดอายุหรือไม่ถูกต้อง
+ * Clear session data when token expires or is invalid
  */
 export const handleUnauthorized = () => {
   localStorage.removeItem("token");
@@ -32,7 +32,7 @@ export const handleUnauthorized = () => {
 };
 
 /**
- * Wrapper สำหรับ fetch ที่ดักจับ 401 Unauthorized อัตโนมัติ
+ * Fetch wrapper that automatically handles 401 Unauthorized
  */
 export const fetchWithAuth = async (
   input: RequestInfo | URL,

@@ -102,10 +102,6 @@ export const linkOrCreateOAuthUser = async (profile: {
       throw new Error("OAuth provider ไม่ได้ส่ง email กลับมา");
     }
 
-    /* -----------------------------------------------------
-       1. เช็กว่า provider account นี้เคย link แล้วหรือยัง
-    ----------------------------------------------------- */
-
     const [providerUsers] = await conn.query<UserRow[]>(
       `
         SELECT
@@ -128,11 +124,6 @@ export const linkOrCreateOAuthUser = async (profile: {
     if (providerUsers.length > 0) {
       const user = providerUsers[0];
 
-      /*
-        Sync email จาก OAuth provider ทุกครั้งที่ login
-        เพื่อให้ email ใน DB ตรงกับ provider เสมอ
-        และป้องกันการใช้ email เก่าที่ถูกเปลี่ยนใน DB โดยตรง
-      */
       if (
         email &&
         user.email &&
@@ -182,11 +173,6 @@ export const linkOrCreateOAuthUser = async (profile: {
       };
     }
 
-    /* -----------------------------------------------------
-       2. provider ยังไม่เคย link
-          เช็กว่ามี user ที่ใช้ email เดียวกันหรือไม่
-    ----------------------------------------------------- */
-
     const [emailUsers] = await conn.query<UserRow[]>(
       `
         SELECT
@@ -202,11 +188,6 @@ export const linkOrCreateOAuthUser = async (profile: {
       `,
       [email]
     );
-
-    /*
-      ถ้ามี account เดิมที่ email ตรงกัน
-      link OAuth provider เข้ากับ user เดิม
-    */
 
     if (emailUsers.length > 0) {
       const user = emailUsers[0];
@@ -262,11 +243,6 @@ export const linkOrCreateOAuthUser = async (profile: {
       };
     }
 
-    /* -----------------------------------------------------
-       3. ไม่มี user เลย
-          สร้าง user ใหม่ + provider
-    ----------------------------------------------------- */
-
     await conn.beginTransaction();
 
     try {
@@ -298,10 +274,8 @@ export const linkOrCreateOAuthUser = async (profile: {
         email.split("@")[0] ||
         `User_${userCode}`;
 
-      // user_name ของ DB เดิมมี VARCHAR(50)
       displayName = displayName.slice(0, 50);
 
-      // ป้องกันชื่อซ้ำ
       const [sameName] = await conn.query<RowDataPacket[]>(
         `
           SELECT user_id
@@ -328,11 +302,6 @@ export const linkOrCreateOAuthUser = async (profile: {
         [nextValue]
       );
 
-      /*
-        OAuth account ไม่จำเป็นต้องมี password
-        เพราะฉะนั้น user_password = NULL
-      */
-
       await conn.query(
         `
           INSERT INTO users
@@ -353,11 +322,6 @@ export const linkOrCreateOAuthUser = async (profile: {
           email,
         ]
       );
-
-      /*
-        เก็บ Google / Microsoft identity
-        ใน user_auth_providers
-      */
 
       await conn.query(
         `
@@ -461,10 +425,6 @@ export const register = async (
 
   const cleanUsername = username.trim();
   const cleanEmail = email.trim().toLowerCase();
-  /*
-    password ไม่ trim
-    เพราะ space อาจเป็นส่วนหนึ่งของ password
-  */
   const cleanPassword = password;
 
   // Validate username
@@ -905,10 +865,6 @@ export const googleCallback = async (
       );
     }
 
-    /* -----------------------------------------------------
-       เอา authorization code ไปแลก access token
-    ----------------------------------------------------- */
-
     const tokenRes = await fetch(
       "https://oauth2.googleapis.com/token",
       {
@@ -942,10 +898,6 @@ export const googleCallback = async (
           "Google token exchange failed"
       );
     }
-
-    /* -----------------------------------------------------
-       ขอ Google profile
-    ----------------------------------------------------- */
 
     const profileRes = await fetch(
       "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -983,10 +935,6 @@ export const googleCallback = async (
       );
     }
 
-    /* -----------------------------------------------------
-       หา / link / สร้าง user
-    ----------------------------------------------------- */
-
     const result =
       await linkOrCreateOAuthUser({
         provider: "google",
@@ -994,10 +942,6 @@ export const googleCallback = async (
         email: profile.email,
         name: profile.name,
       });
-
-    /* -----------------------------------------------------
-       Redirect กลับ frontend
-    ----------------------------------------------------- */
 
     const params =
       new URLSearchParams({
@@ -1424,7 +1368,6 @@ export const updateEmail = async (
 
   const newEmail = email.trim().toLowerCase();
 
-  // ตรวจสอบรูปแบบ email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(newEmail)) {
     return res.status(400).json({ message: "รูปแบบอีเมลไม่ถูกต้อง" });
@@ -1435,7 +1378,6 @@ export const updateEmail = async (
   const conn = await db.getConnection();
 
   try {
-    // ตรวจสอบว่า email ใหม่ซ้ำกับคนอื่นหรือไม่
     const [duplicateRows] = await conn.query<RowDataPacket[]>(
       `
         SELECT user_id
@@ -1454,7 +1396,6 @@ export const updateEmail = async (
       });
     }
 
-    // ตรวจสอบว่า email เป็นค่าเดิมหรือไม่
     const [currentRows] = await conn.query<RowDataPacket[]>(
       `SELECT email FROM users WHERE user_id = ? AND deleted_flg = 0 LIMIT 1`,
       [userId]
@@ -1478,7 +1419,6 @@ export const updateEmail = async (
     await conn.beginTransaction();
 
     try {
-      // อัปเดต email ใน users table
       await conn.query(
         `
           UPDATE users
@@ -1488,8 +1428,6 @@ export const updateEmail = async (
         [newEmail, userId]
       );
 
-      // อัปเดต provider_email ใน user_auth_providers ด้วย
-      // เพื่อให้ OAuth login ครั้งถัดไปยังคง sync ถูกต้อง
       await conn.query(
         `
           UPDATE user_auth_providers
@@ -1505,7 +1443,6 @@ export const updateEmail = async (
       throw error;
     }
 
-    // สร้าง token ใหม่ที่มี email ที่อัปเดตแล้ว
     const newToken = jwt.sign(
       {
         user_id: userId,
@@ -1530,6 +1467,380 @@ export const updateEmail = async (
   } catch (err: unknown) {
     console.error("updateEmail error:", err);
     return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
+  }
+};
+
+/* =========================================================
+   FORGOT PASSWORD & CHANGE PASSWORD
+========================================================= */
+
+function maskEmail(email: string): string {
+  const parts = email.split("@");
+  if (parts.length !== 2) return email;
+  const [local, domain] = parts;
+  if (local.length <= 2) {
+    return `${local[0]}*@${domain}`;
+  }
+  const maskedLocal = `${local[0]}${"*".repeat(Math.min(local.length - 2, 4))}${local[local.length - 1]}`;
+  return `${maskedLocal}@${domain}`;
+}
+
+export const requestPasswordReset = async (
+  req: Request,
+  res: Response
+) => {
+  const { identifier } = req.body;
+
+  const loginKey =
+    typeof identifier === "string" ? identifier.trim() : "";
+
+  if (!loginKey) {
+    return res.status(400).json({
+      message: "กรุณาระบุอีเมล หรือ ชื่อผู้ใช้งาน",
+    });
+  }
+
+  const conn = await db.getConnection();
+  try {
+    const [rows] = await conn.query<UserRow[]>(
+      `
+        SELECT
+          user_id,
+          user_name,
+          email,
+          user_password,
+          role_flg
+        FROM users
+        WHERE (
+          user_id = ?
+          OR user_name = ?
+          OR LOWER(email) = LOWER(?)
+        )
+        AND deleted_flg = 0
+        LIMIT 1
+      `,
+      [loginKey, loginKey, loginKey]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: "ไม่พบบัญชีผู้ใช้งานนี้ในระบบ กรุณาตรวจสอบอีเมลหรือชื่อผู้ใช้อีกครั้ง",
+      });
+    }
+
+    const user = rows[0];
+
+    if (!user.user_password) {
+      return res.status(400).json({
+        message:
+          "บัญชีนี้เข้าใช้งานผ่าน Social Login (Google / Microsoft) เท่านั้น ไม่จำเป็นต้องรีเซ็ตรหัสผ่าน กรุณาเข้าสู่ระบบด้วย Google หรือ Microsoft",
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = await bcrypt.hash(otp, 8);
+
+    const resetToken = jwt.sign(
+      {
+        userId: user.user_id,
+        otpHash,
+        purpose: "password_reset_otp",
+      },
+      getJwtSecret(),
+      {
+        expiresIn: "15m",
+      }
+    );
+
+    const maskedEmail = user.email ? maskEmail(user.email) : "ไม่พบอีเมลในระบบ";
+    console.log(`[PASSWORD_RESET] OTP generated for ${user.user_name} (${user.email || 'no-email'}): ${otp}`);
+
+    return res.json({
+      message: `ระบบได้สร้างรหัสยืนยัน OTP เรียบร้อยแล้ว (ส่งไปยัง ${maskedEmail})`,
+      resetToken,
+      maskedEmail,
+      username: user.user_name,
+      demoOtp: otp,
+    });
+  } catch (err: unknown) {
+    console.error("requestPasswordReset error:", err);
+    return res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการขอรหัสยืนยัน",
+    });
+  } finally {
+    conn.release();
+  }
+};
+
+export const verifyResetOtp = async (
+  req: Request,
+  res: Response
+) => {
+  const { resetToken, otp } = req.body;
+
+  if (
+    typeof resetToken !== "string" ||
+    !resetToken.trim() ||
+    typeof otp !== "string" ||
+    !otp.trim()
+  ) {
+    return res.status(400).json({
+      message: "ข้อมูลสำหรับยืนยัน OTP ไม่ครบถ้วน",
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      resetToken,
+      getJwtSecret()
+    ) as {
+      userId?: string;
+      otpHash?: string;
+      purpose?: string;
+    };
+
+    if (
+      decoded.purpose !== "password_reset_otp" ||
+      !decoded.userId ||
+      !decoded.otpHash
+    ) {
+      return res.status(400).json({
+        message: "รหัสยืนยันไม่ถูกต้องหรือหมดอายุแล้ว กรุณาขอรหัสใหม่",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(otp.trim(), decoded.otpHash);
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "รหัส OTP ไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่อีกครั้ง",
+      });
+    }
+
+    const verifiedToken = jwt.sign(
+      {
+        userId: decoded.userId,
+        purpose: "reset_password_verified",
+      },
+      getJwtSecret(),
+      {
+        expiresIn: "10m",
+      }
+    );
+
+    return res.json({
+      message: "ยืนยันรหัส OTP ถูกต้อง",
+      verifiedToken,
+    });
+  } catch (err: unknown) {
+    if (err instanceof jwt.TokenExpiredError) {
+      return res.status(400).json({
+        message: "รหัสยืนยัน OTP หมดอายุแล้ว (เกิน 15 นาที) กรุณาขอรหัสใหม่",
+      });
+    }
+
+    return res.status(400).json({
+      message: "รหัสยืนยันไม่ถูกต้องหรือหมดอายุแล้ว กรุณาขอรหัสใหม่",
+    });
+  }
+};
+
+export const resetPassword = async (
+  req: Request,
+  res: Response
+) => {
+  const { verifiedToken, newPassword } = req.body;
+
+  if (typeof verifiedToken !== "string" || !verifiedToken.trim()) {
+    return res.status(400).json({
+      message: "เซสชันการรีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุ กรุณาเริ่มใหม่อีกครั้ง",
+    });
+  }
+
+  if (typeof newPassword !== "string" || !newPassword) {
+    return res.status(400).json({
+      message: "กรุณาระบุรหัสผ่านใหม่",
+    });
+  }
+
+  const passwordErr = validateBackendPassword(newPassword);
+  if (passwordErr) {
+    return res.status(400).json({ message: passwordErr });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      verifiedToken,
+      getJwtSecret()
+    ) as {
+      userId?: string;
+      purpose?: string;
+    };
+
+    if (
+      decoded.purpose !== "reset_password_verified" ||
+      !decoded.userId
+    ) {
+      return res.status(400).json({
+        message: "เซสชันการรีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุ กรุณาเริ่มใหม่อีกครั้ง",
+      });
+    }
+
+    const conn = await db.getConnection();
+    try {
+      const [rows] = await conn.query<RowDataPacket[]>(
+        `
+          SELECT user_id, user_name, user_password
+          FROM users
+          WHERE user_id = ? AND deleted_flg = 0
+          LIMIT 1
+        `,
+        [decoded.userId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          message: "ไม่พบบัญชีผู้ใช้งานในระบบ",
+        });
+      }
+
+      if (rows[0].user_password) {
+        const isSame = await bcrypt.compare(newPassword, rows[0].user_password);
+        if (isSame) {
+          return res.status(400).json({
+            message: "รหัสผ่านใหม่ต้องไม่ตรงกับรหัสผ่านเดิม",
+          });
+        }
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      await conn.query(
+        `
+          UPDATE users
+          SET user_password = ?
+          WHERE user_id = ? AND deleted_flg = 0
+        `,
+        [hashedPassword, decoded.userId]
+      );
+
+      return res.json({
+        message: "รีเซ็ตรหัสผ่านสำเร็จเรียบร้อยแล้ว กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่",
+      });
+    } finally {
+      conn.release();
+    }
+  } catch (err: unknown) {
+    if (err instanceof jwt.TokenExpiredError) {
+      return res.status(400).json({
+        message: "เซสชันหมดอายุแล้ว กรุณาเริ่มกระบวนการใหม่อีกครั้ง",
+      });
+    }
+
+    console.error("resetPassword error:", err);
+    return res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน",
+    });
+  }
+};
+
+export const changePassword = async (
+  req: Request,
+  res: Response
+) => {
+  const { identifier, currentPassword, newPassword } = req.body;
+
+  const loginKey =
+    typeof identifier === "string"
+      ? identifier.trim()
+      : (req as any).user?.user_id || "";
+
+  if (!loginKey) {
+    return res.status(400).json({
+      message: "กรุณาระบุอีเมล หรือ ชื่อผู้ใช้งาน",
+    });
+  }
+
+  if (typeof currentPassword !== "string" || !currentPassword) {
+    return res.status(400).json({
+      message: "กรุณาระบุรหัสผ่านปัจจุบัน",
+    });
+  }
+
+  if (typeof newPassword !== "string" || !newPassword) {
+    return res.status(400).json({
+      message: "กรุณาระบุรหัสผ่านใหม่",
+    });
+  }
+
+  const passwordErr = validateBackendPassword(newPassword);
+  if (passwordErr) {
+    return res.status(400).json({ message: passwordErr });
+  }
+
+  if (currentPassword === newPassword) {
+    return res.status(400).json({
+      message: "รหัสผ่านใหม่ต้องไม่ตรงกับรหัสผ่านปัจจุบัน",
+    });
+  }
+
+  const conn = await db.getConnection();
+  try {
+    const [rows] = await conn.query<UserRow[]>(
+      `
+        SELECT user_id, user_name, email, user_password, role_flg
+        FROM users
+        WHERE (
+          user_id = ?
+          OR user_name = ?
+          OR LOWER(email) = LOWER(?)
+        )
+        AND deleted_flg = 0
+        LIMIT 1
+      `,
+      [loginKey, loginKey, loginKey]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: "ไม่พบบัญชีผู้ใช้งานในระบบ",
+      });
+    }
+
+    const user = rows[0];
+
+    if (!user.user_password) {
+      return res.status(400).json({
+        message: "บัญชีนี้เข้าใช้งานผ่าน Social Login (Google / Microsoft) เท่านั้น ไม่สามารถเปลี่ยนรหัสผ่านได้",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.user_password);
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await conn.query(
+      `
+        UPDATE users
+        SET user_password = ?
+        WHERE user_id = ? AND deleted_flg = 0
+      `,
+      [hashedPassword, user.user_id]
+    );
+
+    return res.json({
+      message: "เปลี่ยนรหัสผ่านสำเร็จเรียบร้อยแล้ว",
+    });
+  } catch (err: unknown) {
+    console.error("changePassword error:", err);
+    return res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน",
+    });
   } finally {
     conn.release();
   }

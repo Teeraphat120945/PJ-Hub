@@ -131,3 +131,92 @@ export const demoSocialLoginApi = async (
 
   return data;
 };
+
+/* =========================================================
+   Password Reset & Change APIs
+========================================================= */
+
+export const requestPasswordResetApi = async (identifier: string) => {
+  const res = await fetch(`${API}/forgot-password/request`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ identifier }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "ไม่สามารถส่งคำขอรีเซ็ตรหัสผ่านได้");
+  }
+  return data as {
+    message: string;
+    resetToken: string;
+    maskedEmail: string;
+    username: string;
+    demoOtp?: string;
+  };
+};
+
+export const verifyResetOtpApi = async (resetToken: string, otp: string) => {
+  const res = await fetch(`${API}/forgot-password/verify-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ resetToken, otp }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "ยืนยันรหัส OTP ไม่สำเร็จ");
+  }
+  return data as {
+    message: string;
+    verifiedToken: string;
+  };
+};
+
+export const resetPasswordApi = async (verifiedToken: string, newPassword: string) => {
+  const res = await fetch(`${API}/forgot-password/reset`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ verifiedToken, newPassword }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "รีเซ็ตรหัสผ่านไม่สำเร็จ");
+  }
+  return data as {
+    message: string;
+  };
+};
+
+export const changePasswordApi = async (
+  identifier: string,
+  currentPassword: string,
+  newPassword: string
+) => {
+  const res = await fetch(`${API}/change-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      identifier,
+      currentPassword,
+      newPassword,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ");
+  }
+  return data as {
+    message: string;
+  };
+};

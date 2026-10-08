@@ -24,10 +24,7 @@ const isTokenExpired = (rawToken: string | null): boolean => {
 };
 
 /**
- * Route Guard Component เพื่อตรวจสอบสิทธิ์การเข้าถึงหน้าเว็บ (Authentication & RBAC)
- * - หากยังไม่ Login หรือ Token หมดอายุ: Redirect ไปยัง /login พร้อมแสดงแจ้งเตือน
- * - หากสิทธิ์ (Role) ไม่ถึง: Redirect กลับไปยัง / พร้อมแจ้งเตือนว่าไม่มีสิทธิ์
- * - หากเป็นหน้า Guest-only (requireAuth = false): หาก Login อยู่แล้วจะ Redirect ไปยัง /
+ * Route Guard Component for Authentication & RBAC
  */
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
@@ -72,7 +69,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }, [token, role, allowedRoles, requireAuth]);
 
-  // กรณีหน้าที่ต้องเข้าสู่ระบบก่อน
   if (requireAuth) {
     if (!token) {
       return <Navigate to="/login" state={{ from: location }} replace />;
@@ -84,8 +80,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
     }
   } else {
-    // กรณีหน้าสำหรับผู้ที่ยังไม่ล็อกอิน เช่น /login หรือ /register
-    // หากกำลัง redirect กลับมาจาก OAuth (มี query token หรือ oauth) ให้ยอมผ่านเข้าหน้า Login เพื่อบันทึก Token ก่อน
     const searchParams = new URLSearchParams(location.search);
     const isOAuthCallback = searchParams.has("token") || searchParams.has("oauth");
 

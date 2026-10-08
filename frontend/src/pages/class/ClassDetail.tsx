@@ -56,7 +56,6 @@ const ClassDetail = () => {
   const currentRole = token && rawRole !== null && rawRole !== undefined ? Number(rawRole) : null;
   const isAdmin = currentRole === 0;
 
-  // ตรวจสอบว่าเป็นอาจารย์ผู้สร้างรายวิชา หรือผู้ดูแลระบบ (Admin) หรือไม่ (สำหรับแก้ไขรายวิชา)
   const isClassCreatorOrAdmin = Boolean(
     token && (
       isAdmin ||
@@ -64,7 +63,6 @@ const ClassDetail = () => {
     )
   );
 
-  // ตรวจสอบว่าเป็นผู้รับผิดชอบรายวิชา (รวมอาจารย์ผู้ร่วมสอน) หรือผู้ดูแลระบบ หรือไม่
   const isClassResponsible = Boolean(
     token && (
       isAdmin ||
@@ -261,7 +259,6 @@ const ClassDetail = () => {
                           {formatThaiYear(a.created_datetime)}
                         </span>
                       )}
-                      {/* ⚠️ แจ้งเตือนสถานะทรัพยากร แสดงเฉพาะเจ้าของรายวิชาหรือ Admin เท่านั้น */}
                       {isClassResponsible && (() => {
                         const hasFiles = Boolean(a.has_files ?? (a.file_count && a.file_count > 0));
                         const hasLink = Boolean(a.has_link ?? (a.assignment_link && a.assignment_link.trim().length > 0));
