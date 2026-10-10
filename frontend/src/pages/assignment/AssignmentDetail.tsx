@@ -105,15 +105,19 @@ const AssignmentDetail = () => {
     assignment?.retention_days || 365
   );
 
-  const handleCheckLink = async (targetUrl?: string) => {
+  const handleCheckLink = async (targetUrl?: string, silent: boolean = false) => {
     const url = targetUrl || assignment?.assignment_link;
     if (!url || !url.trim()) return;
     try {
       setCheckingLink(true);
       const res = await checkLinkService(url);
       setLinkCheckResult(res);
-      if (!res.is_healthy) {
-        toast.warning(`ตรวจพบปัญหาลิงก์ภายนอก: ${res.message}`);
+      if (!silent) {
+        if (res.is_healthy) {
+          toast.success(res.message || "ลิงก์ผลงานสามารถเข้าถึงได้ปกติ");
+        } else {
+          toast.warning(`ตรวจพบปัญหาลิงก์ภายนอก: ${res.message}`);
+        }
       }
     } catch (err: any) {
       setLinkCheckResult({
@@ -122,6 +126,9 @@ const AssignmentDetail = () => {
         reason: "network_error",
         message: err.message || "ไม่สามารถเชื่อมต่อไปยังลิงก์เพื่อตรวจสอบได้",
       });
+      if (!silent) {
+        toast.error("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อตรวจสอบลิงก์ได้");
+      }
     } finally {
       setCheckingLink(false);
     }
@@ -166,7 +173,7 @@ const AssignmentDetail = () => {
       });
 
       if (res.assignment_link && res.assignment_link.trim()) {
-        handleCheckLink(res.assignment_link);
+        handleCheckLink(res.assignment_link, true);
       }
     } catch (error) {
       console.error("โหลดข้อมูลผลงานไม่สำเร็จ", error);

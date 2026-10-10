@@ -1005,42 +1005,105 @@ export const checkAssignmentLink = async (req: Request, res: Response) => {
       });
     }
 
+    const knownPlatforms = [
+      "google.com",
+      "drive.google.com",
+      "docs.google.com",
+      "figma.com",
+      "canva.com",
+      "notion.so",
+      "notion.site",
+      "github.com",
+      "gitlab.com",
+      "youtube.com",
+      "youtu.be",
+      "onedrive.live.com",
+      "1drv.ms",
+      "sharepoint.com",
+      "dropbox.com",
+      "medium.com",
+      "behance.net",
+      "dribbble.com",
+      "padlet.com",
+      "miro.com",
+      "trello.com",
+      "vercel.app",
+      "netlify.app",
+      "render.com",
+    ];
+
+    const isKnownPlatform = knownPlatforms.some(
+      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+    );
+
+    const browserHeaders: Record<string, string> = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      "Accept":
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "th-TH,th;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Sec-Ch-Ua":
+        '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+      "Sec-Ch-Ua-Mobile": "?0",
+      "Sec-Ch-Ua-Platform": '"Windows"',
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "Upgrade-Insecure-Requests": "1",
+    };
+
     let responseStatus: number | null = null;
-    let ok = false;
+    let finalUrlStr = testUrl;
+    let isCloudflareOrWaf = false;
+    let bodySnippet = "";
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const resp = await fetch(testUrl, {
-        method: "HEAD",
+        method: "GET",
         signal: controller.signal,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        },
+        headers: browserHeaders,
         redirect: "follow",
       });
 
       clearTimeout(timeoutId);
       responseStatus = resp.status;
-      ok = resp.ok;
+      finalUrlStr = resp.url || testUrl;
 
-      if (resp.status === 405 || resp.status === 400) {
-        const getController = new AbortController();
-        const getTimeoutId = setTimeout(() => getController.abort(), 6000);
-        const getResp = await fetch(testUrl, {
-          method: "GET",
-          signal: getController.signal,
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Range": "bytes=0-100",
-          },
-          redirect: "follow",
-        });
-        clearTimeout(getTimeoutId);
-        responseStatus = getResp.status;
-        ok = getResp.ok;
+      const serverHeader = (resp.headers.get("server") || "").toLowerCase();
+      const cfRay = resp.headers.get("cf-ray");
+      const cfMitigated = resp.headers.get("cf-mitigated");
+      const cfWorker = resp.headers.get("cf-cache-status");
+      const awsCf = resp.headers.get("x-amz-cf-id");
+
+      isCloudflareOrWaf =
+        serverHeader.includes("cloudflare") ||
+        serverHeader.includes("cloudfront") ||
+        serverHeader.includes("akamai") ||
+        Boolean(cfRay) ||
+        Boolean(cfMitigated) ||
+        Boolean(cfWorker) ||
+        Boolean(awsCf);
+
+      // If status indicates error or restriction, sample body to check for bot challenge
+      if (resp.status >= 400) {
+        try {
+          const reader = resp.body?.getReader();
+          if (reader) {
+            const chunk = await reader.read();
+            if (chunk.value) {
+              bodySnippet = new TextDecoder().decode(chunk.value.slice(0, 2048));
+            }
+            reader.cancel().catch(() => {});
+          }
+        } catch {
+          // ignore stream read error
+        }
+      } else {
+        resp.body?.cancel().catch(() => {});
       }
     } catch (fetchErr: any) {
       if (fetchErr?.name === "AbortError") {
@@ -1049,6 +1112,42 @@ export const checkAssignmentLink = async (req: Request, res: Response) => {
           status_code: null,
           reason: "timeout",
           message: "การเชื่อมต่อหมดเวลา (Timeout) เซิร์ฟเวอร์ปลายทางตอบสนองช้าหรือไม่สามารถเข้าถึงได้",
+          tested_url: testUrl,
+        });
+      }
+
+      const errCode = fetchErr?.code || fetchErr?.cause?.code;
+      if (errCode === "ENOTFOUND") {
+        return res.json({
+          is_healthy: false,
+          status_code: null,
+          reason: "not_found",
+          message: "ไม่พบชื่อโดเมนนี้ (DNS Not Found) โปรดตรวจสอบความถูกต้องของ URL",
+          tested_url: testUrl,
+        });
+      }
+
+      if (errCode === "ECONNREFUSED") {
+        return res.json({
+          is_healthy: false,
+          status_code: null,
+          reason: "network_error",
+          message: "เซิร์ฟเวอร์ปลายทางปฏิเสธการเชื่อมต่อ (Connection Refused)",
+          tested_url: testUrl,
+        });
+      }
+
+      if (
+        errCode === "CERT_HAS_EXPIRED" ||
+        errCode === "UNABLE_TO_VERIFY_LEAF_SIGNATURE" ||
+        errCode === "ERR_TLS_CERT_ALTNAME_INVALID" ||
+        errCode === "DEPTH_ZERO_SELF_SIGNED_CERT"
+      ) {
+        return res.json({
+          is_healthy: false,
+          status_code: null,
+          reason: "ssl_error",
+          message: "ใบรับรองความปลอดภัยของเว็บไซต์ (SSL Certificate) ไม่ถูกต้องหรือหมดอายุ",
           tested_url: testUrl,
         });
       }
@@ -1062,6 +1161,41 @@ export const checkAssignmentLink = async (req: Request, res: Response) => {
       });
     }
 
+    // Check if redirected to a login page (Google / Microsoft authentication)
+    try {
+      const finalParsed = new URL(finalUrlStr);
+      const finalHost = finalParsed.hostname.toLowerCase();
+
+      if (
+        finalHost === "accounts.google.com" ||
+        finalParsed.pathname.includes("/ServiceLogin") ||
+        finalParsed.pathname.includes("/v3/signin")
+      ) {
+        return res.json({
+          is_healthy: false,
+          status_code: 403,
+          reason: "restricted",
+          message: "ลิงก์ Google Drive / Docs นี้ยังไม่ได้เปิดแชร์เป็นสาธารณะ (ระบบส่งต่อไปหน้าเข้าสู่ระบบเพื่อขอสิทธิ์)",
+          tested_url: testUrl,
+        });
+      }
+
+      if (
+        finalHost === "login.live.com" ||
+        finalHost === "login.microsoftonline.com"
+      ) {
+        return res.json({
+          is_healthy: false,
+          status_code: 403,
+          reason: "restricted",
+          message: "ลิงก์ OneDrive / SharePoint นี้ยังไม่ได้เปิดแชร์เป็นสาธารณะ (ต้องเข้าสู่ระบบองค์กร)",
+          tested_url: testUrl,
+        });
+      }
+    } catch {
+      // ignore
+    }
+
     if (responseStatus !== null && responseStatus >= 200 && responseStatus < 400) {
       return res.json({
         is_healthy: true,
@@ -1072,7 +1206,31 @@ export const checkAssignmentLink = async (req: Request, res: Response) => {
       });
     }
 
-    if (responseStatus === 401 || responseStatus === 403) {
+    if (responseStatus === 401 || responseStatus === 403 || responseStatus === 429) {
+      const lowerSnippet = bodySnippet.toLowerCase();
+      const isBotChallenge =
+        isCloudflareOrWaf ||
+        isKnownPlatform ||
+        lowerSnippet.includes("cloudflare") ||
+        lowerSnippet.includes("just a moment") ||
+        lowerSnippet.includes("turnstile") ||
+        lowerSnippet.includes("ddos-guard") ||
+        lowerSnippet.includes("attention required") ||
+        lowerSnippet.includes("bot protection") ||
+        lowerSnippet.includes("captcha") ||
+        lowerSnippet.includes("security check") ||
+        lowerSnippet.includes("enable javascript");
+
+      if (isBotChallenge) {
+        return res.json({
+          is_healthy: true,
+          status_code: 200,
+          reason: "healthy",
+          message: "ลิงก์สามารถเปิดใช้งานได้ปกติ (ระบบปลายทางมีการตรวจสอบบอต แต่ผู้ใช้ทั่วไปเปิดดูได้)",
+          tested_url: testUrl,
+        });
+      }
+
       return res.json({
         is_healthy: false,
         status_code: responseStatus,
@@ -1087,7 +1245,17 @@ export const checkAssignmentLink = async (req: Request, res: Response) => {
         is_healthy: false,
         status_code: responseStatus,
         reason: "not_found",
-        message: "ไม่พบหน้าหรือไฟล์ปลายทาง (HTTP 404 Not Found) ลิงก์อาจถูกลบหรือย้ายโฟลเดอร์",
+        message: "ไม่พบหน้าหรือไฟล์ปลายทาง (HTTP 404 Not Found) ลิงก์อาจถูกลบหรือ URL ไม่ถูกต้อง",
+        tested_url: testUrl,
+      });
+    }
+
+    if (responseStatus === 503 && isCloudflareOrWaf) {
+      return res.json({
+        is_healthy: true,
+        status_code: 200,
+        reason: "healthy",
+        message: "ลิงก์สามารถเปิดใช้งานได้ปกติ (ระบบปลายทางผ่าน Cloudflare Protection)",
         tested_url: testUrl,
       });
     }
