@@ -10,6 +10,14 @@
   width: 100%;
 }
 
+/* จัดการ์ดให้อยู่กึ่งกลางเมื่อเปิดดูแบบสาธารณะ / ไม่มีกล่องคอมเมนต์ทางขวา */
+.assignment-detail-layout.public-view,
+.assignment-detail-layout:not(:has(.comment-panel)) {
+  display: block;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
 @media (max-width: 1023px) {
   .assignment-detail-layout {
     grid-template-columns: 1fr;

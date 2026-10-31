@@ -196,7 +196,6 @@ function Register() {
         </button>
 
         <div className="auth-brand-header">
-          <div className="auth-logo-badge">UP</div>
           <h2>สมัครสมาชิก</h2>
           <p className="auth-subtitle">สร้างบัญชีผู้ใช้งานใหม่ในระบบ หรือเชื่อมต่อด้วย Social Account</p>
         </div>

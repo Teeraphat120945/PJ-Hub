@@ -287,7 +287,7 @@ const AssignmentDetail = () => {
   }
 
   return (
-    <div className="assignment-detail-layout">
+    <div className={`assignment-detail-layout ${isPublicView ? "public-view" : ""}`}>
       <div className="assignment-detail-card">
         <div className="detail-page-header">
           <div className="detail-header-left">
@@ -391,7 +391,6 @@ const AssignmentDetail = () => {
         {isPublicView && (
           <div className="login-required" style={{ marginTop: 20 }}>
             <div className="login-required-card">
-              <div className="auth-logo-badge">UP</div>
               <h2>เข้าสู่ระบบเพื่อดูข้อมูลเพิ่มเติม</h2>
               <p>กรุณาเข้าสู่ระบบด้วยบัญชีของคุณเพื่อดูไฟล์แนบ ลิงก์ผลงาน และร่วมแสดงความคิดเห็น</p>
               <button className="btn-primary" onClick={() => navigate("/login")}>

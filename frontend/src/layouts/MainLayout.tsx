@@ -114,16 +114,18 @@ function MainLayout() {
               type="button"
               className="up-logo-btn"
               onClick={toggleSidebar}
-              title={isCollapsed ? "ขยายแถบเมนู (คลิกที่โลโก้ UP)" : "ย่อแถบเมนู (คลิกที่โลโก้ UP)"}
+              title={isCollapsed ? "ขยายแถบเมนู" : "ย่อแถบเมนู"}
               aria-label={isCollapsed ? "ขยายเมนู" : "ย่อเมนู"}
             >
-              <div className="up-logo-badge">UP</div>
+              <div className="up-logo-badge">
+                <FiBookOpen size={20} />
+              </div>
             </button>
             {!isCollapsed && (
               <div
                 className="brand-text"
                 onClick={toggleSidebar}
-                title="ย่อแถบเมนู (คลิกที่โลโก้ UP)"
+                title="ย่อแถบเมนู"
               >
                 <span className="brand-title">มหาวิทยาลัยพะเยา</span>
                 <span className="brand-subtitle">Classroom Hub</span>

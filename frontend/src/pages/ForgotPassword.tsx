@@ -237,7 +237,6 @@ function ForgotPassword() {
         </button>
 
         <div className="auth-brand-header">
-          <div className="auth-logo-badge">UP</div>
           <h2>ระบบจัดการรหัสผ่าน</h2>
           <p className="auth-subtitle">ระบบคลังรายวิชาและผลงาน มหาวิทยาลัยพะเยา</p>
         </div>

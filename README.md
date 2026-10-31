@@ -46,11 +46,15 @@
 
 ### 🔐 1. ระบบยืนยันตัวตนและความปลอดภัย (Authentication & Account Management)
 - **Local Authentication:** ลงทะเบียนและเข้าสู่ระบบด้วย Username/Email ร่วมกับรหัสผ่านที่เข้ารหัสความปลอดภัยด้วย **Bcrypt**
-- **Single Sign-On (OAuth 2.0):** รองรับการล็อกอินผ่าน **Google OAuth** และ **Microsoft Graph API** พร้อมระบบผูกบัญชีอัตโนมัติ (Account Linking) ตามอีเมล
+- **Real-Time Validation & Password Strength Meter:** ตรวจสอบความถูกต้องของข้อมูลแบบ Real-time ทั้งฝั่ง Frontend และ Backend (Username 3–30 ตัวอักษร, รูปแบบ Email มาตรฐาน, และรหัสผ่านอย่างน้อย 8 ตัวอักษรที่ต้องมีตัวพิมพ์ใหญ่ `A-Z` และตัวเลข `0-9`) พร้อมแถบวัดความแข็งแกร่งของรหัสผ่าน 4 ระดับ (`อ่อนแอ`, `พอใช้`, `แข็งแกร่ง`, `แข็งแกร่งมาก`) และรายการเช็กลิสต์เงื่อนไขแบบโต้ตอบ
+- **Password Reset (3-Step OTP Flow) & Direct Password Change:**
+  - **ลืมรหัสผ่าน (OTP Verification):** ระบบกู้คืนรหัสผ่านแบบ 3 ขั้นตอน (ระบุบัญชี -> ยืนยันรหัส OTP 6 หลักที่มีอายุ 15 นาที -> ตั้งรหัสผ่านใหม่) พร้อม **Simulator OTP Banner** สำหรับทดสอบในสภาพแวดล้อมพัฒนาโดยไม่ต้องต่อ SMTP จริง
+  - **เปลี่ยนรหัสผ่านโดยตรง (Direct Change):** รองรับการเปลี่ยนรหัสผ่านด้วยรหัสผ่านปัจจุบันควบคู่กับการตรวจสอบเงื่อนไขรหัสผ่านใหม่
+- **Single Sign-On (OAuth 2.0):** รองรับการล็อกอินผ่าน **Google OAuth** และ **Microsoft Graph API** พร้อมระบบผูกบัญชีอัตโนมัติ (Account Linking) ตามอีเมลผ่านตาราง `user_auth_providers`
 - **Interactive Social Demo Mode:** มีโหมดจำลองการล็อกอินผ่าน Google / Microsoft เพื่อความสะดวกรวดเร็วในการทดสอบระบบโดยไม่ต้องตั้งค่า Client Secret จริง
 - **Auto-Generated Unique User ID:** ระบบออกรหัสผู้ใช้งานตามลำดับอัตโนมัติ (เช่น `US001`, `US002`) พร้อม Database Row Lock ป้องกัน Race Condition
-- **Email Management:** รองรับการอัปเดตและเปลี่ยนแปลงอีเมลประจำตัวผู้ใช้งาน (`PUT /api/auth/email`)
-- **Safe Session Handling:** จัดเก็บ JWT Token อย่างปลอดภัย พร้อมระบบล้างข้อมูลและ Redirect เมื่อ Token หมดอายุ
+- **Email Management:** รองรับการอัปเดตและเปลี่ยนแปลงอีเมลประจำตัวผู้ใช้งาน (`PUT /api/auth/email`) โดยซิงค์ทั้งตารางผู้ใช้และตาราง OAuth Provider
+- **Safe Session Handling & Auto-401 Interceptor:** จัดเก็บ JWT Token อย่างปลอดภัยผ่านตัวกลาง `fetchWithAuth` ที่ตรวจจับสถานะ `401 Unauthorized` เพื่อล้างเซสชันที่หมดอายุและ Redirect ไปหน้าเข้าสู่ระบบพร้อมแจ้งเตือนอัตโนมัติ
 
 ### 📚 2. ระบบจัดการรายวิชา (Classroom Management)
 - **Course Catalog & Multi-Condition Search:** แคตตาล็อกรายวิชาพร้อมระบบ Real-time Debounce Search ค้นหาได้จากรหัสวิชา, ชื่อวิชา, คำอธิบาย, ชื่อผลงานในวิชา, ประเภทผลงาน, และปี พ.ศ.
@@ -67,25 +71,26 @@
 - **Multi-File Upload with UTF-8 Thai Support:** อัปโหลดไฟล์แนบผลงานได้พร้อมกันหลายไฟล์ รองรับไฟล์ PDF, Word, รูปภาพ, สไลด์ ฯลฯ พร้อมระบบถอดรหัสชื่อไฟล์ภาษาไทยอย่างถูกต้อง ป้องกันปัญหาชื่อไฟล์ภาษาไทยเพี้ยน
 - **Public vs Protected Assignment View:**
   - **โหมดสาธารณะ (Guest View):** ผู้ใช้ที่ยังไม่ล็อกอินสามารถเข้าดูข้อมูลพื้นฐาน (ชื่อผลงาน, คำอธิบาย, ชื่อผู้จัดทำ, ประเภท, ปี พ.ศ., ยอดเข้าชม) พร้อมป้ายแนะนำให้เข้าสู่ระบบ
-  - **โหมดสมาชิก (Member View):** สมาชิกในรายวิชาและผู้ดูแลระบบสามารถดาวน์โหลดไฟล์แนบ เปิดลิงก์ภายนอก และร่วมแสดงความคิดเห็นได้
+  - **โหมดสมาชิก (Member View):** สมาชิกในรายวิชาและผู้ดูแลระบบสามารถดาวน์โหลดไฟล์แนบ เปิดลิงก์ภายนอก และอ่านหรือแลกเปลี่ยนความคิดเห็นได้ตามสิทธิ์
 - **Smart Missing Resource Alert (`⚠️ ไม่มีไฟล์/ลิงค์`):**
-  - มีป้ายแจ้งเตือนระบุผลงานที่ยังไม่มีไฟล์แนบและไม่มีลิงก์ภายนอก
-  - **การจำกัดการมองเห็น:** ป้ายแจ้งเตือนนี้จะแสดงให้เห็น**เฉพาะอาจารย์ผู้รับผิดชอบรายวิชาหรือผู้ดูแลระบบ (Admin) เท่านั้น** นิสิตและผู้เข้าชมภายนอกจะไม่เห็นป้ายนี้
-- **External Link Health Check:** ระบบทดสอบสถานะลิงก์ภายนอกแบบ Real-time รายงานสถานะความพร้อมใช้งาน (Healthy, 403 Forbidden, 404 Not Found, Timeout)
-- **Permanent Storage & Retention Lifecycle:**
-  - ไฟล์แนบผลงานจัดเก็บบนระบบ UP PJ-Hub อย่างถาวร
-  - มีระบบคำนวณรอบทบทวนคุณภาพประจำปี (365 วัน / 1 ปีการศึกษา) แสดงสถานะและระยะเวลาที่เหลือในการทบทวน
+  - มีป้ายแจ้งเตือนระบุผลงานที่ยังไม่มีไฟล์แนบและไม่มีลิงก์ภายนอก ทั้งในหน้ารายวิชาและแถบแจ้งเตือนภายในหน้ารายละเอียดผลงาน
+  - **การจำกัดการมองเห็น:** ป้ายแจ้งเตือนในรายวิชาแสดงเฉพาะ**อาจารย์ผู้รับผิดชอบรายวิชาหรือผู้ดูแลระบบ (Admin)** และแถบแจ้งเตือนในหน้าผลงานแสดงเฉพาะ**เจ้าของผลงานและผู้สอน**เท่านั้น
+- **External Link Health Check:** ระบบทดสอบสถานะลิงก์ภายนอกแบบ Real-time รายงานสถานะความพร้อมใช้งาน (Healthy HTTP 200, 403 Forbidden, 404 Not Found, Timeout) พร้อมแบนเนอร์แจ้งเตือนเมื่อตรวจพบลิงก์เสีย
+- **Compact & Expandable Retention Lifecycle Panel:**
+  - ไฟล์แนบผลงานจัดเก็บบนระบบ UP PJ-Hub อย่างถาวร (`จัดเก็บถาวร (Permanent)`)
+  - แผงควบคุมสถานะการดูแลรักษาทรัพยากรแบบย่อ/ขยายได้ (`ดูรายละเอียด` / `ย่อเก็บ`) แสดงการ์ดตัวชี้วัด 4 ด้าน ได้แก่ ระยะเวลาในรอบทบทวนคุณภาพประจำปี (365 วัน), สถานะไฟล์แนบ, สถานะลิงก์ผลงาน และวันครบกำหนดรอบดูแล
 - **View Count Analytics:** ระบบบันทึกยอดการเข้าชมผลงานแบบสะสม พร้อมฟอร์แมตตัวเลขแบบกระชับ (เช่น เข้าชม 5.2k ครั้ง)
 
-### 💬 5. ระบบสนทนาและข้อเสนอแนะ (Collaborative Feedback & Comments)
-- **Two-Way Feedback Loop:** นิสิตและอาจารย์สามารถแลกเปลี่ยนความคิดเห็น คำแนะนำ และข้อติชมในแต่ละผลงานได้
-- **Comment Lifecycle & Ownership:** ผู้เขียนสามารถแก้ไขหรือลบความคิดเห็นของตนเองได้ โดยอาจารย์ผู้รับผิดชอบรายวิชาและ Admin มีสิทธิ์ร่วมดูแลความเรียบร้อย
+### 💬 5. ระบบสนทนาและข้อเสนอแนะสองทิศทาง (Collaborative Two-Way Feedback)
+- **Focused Two-Way Feedback Loop:** ออกแบบการส่งและตอบกลับความคิดเห็นให้เป็นช่องทางแลกเปลี่ยนข้อเสนอแนะโดยตรงระหว่าง**อาจารย์ผู้รับผิดชอบรายวิชา/ผู้ดูแลระบบ** และ**นิสิตเจ้าของผลงาน** (จำกัดข้อความ 150 ตัวอักษรพร้อมตัวนับแบบ Real-time) โดยสมาชิกคนอื่นในวิชาสามารถอ่านข้อเสนอแนะเพื่อการเรียนรู้ร่วมกันได้
+- **Comment Lifecycle & Ownership:** ผู้เขียนสามารถแก้ไขหรือลบความคิดเห็นของตนเองได้ โดยอาจารย์ผู้รับผิดชอบรายวิชาและ Admin มีสิทธิ์ร่วมดูแลและลบความคิดเห็นที่ไม่เหมาะสมได้
 
-### 🛡️ 6. ระบบผู้ดูแลระบบและจัดการสิทธิ์ (Admin User Management)
+### 🛡️ 6. ระบบผู้ดูแลระบบและประสบการณ์การใช้งาน (Admin Management & Responsive UI)
 - **User Directory & Filter:** แสดงรายการผู้ใช้งานทั้งหมด พร้อมระบบค้นหา ตัวกรองบทบาท และสถานะบัญชี
 - **Dynamic Role Switching:** ปรับเปลี่ยนบทบาทผู้ใช้ (Admin, Teacher, Student, Guest) ได้อย่างสะดวกรวดเร็ว
 - **Account Activation Toggle:** สลับสถานะเปิดใช้งาน หรือระงับการใช้งานบัญชีผู้ใช้ได้ทันที
 - **Self-Lockout Prevention:** กลไกป้องกันไม่ให้แอดมินเผลอเปลี่ยนสิทธิ์ตนเอง หรือระงับบัญชีตนเองจนล็อกตัวเองออกจากระบบ
+- **Collapsible Sidebar & Responsive Layout:** แถบเมนูนำทางด้านข้างรองรับการย่อ/ขยาย (Collapsible Sidebar) พร้อมจดจำสถานะลงใน `localStorage` สำหรับหน้าจอ Desktop และปรับเป็น Slide-out Drawer พร้อม Overlay อัตโนมัติสำหรับหน้าจอมือถือและแท็บเล็ต
 
 ---
 
@@ -106,7 +111,8 @@
 | 👥 เพิ่ม / ลบ สมาชิกในรายวิชา | ✅ | ✅ (เฉพาะวิชาของตน) | ❌ | ❌ | ❌ |
 | 📤 ส่งผลงาน / อัปโหลดไฟล์ในรายวิชา | ✅ | ✅ | ✅ (เฉพาะวิชาที่ลงเรียน) | ❌ | ❌ |
 | 📝 แก้ไข / ลบ ผลงาน | ✅ (ทุกผลงาน) | ✅ (เฉพาะผลงานในวิชาตน) | ✅ (เฉพาะผลงานของตน) | ❌ | ❌ |
-| 💬 แสดงความคิดเห็นในผลงาน | ✅ | ✅ (เฉพาะผลงานในวิชาตน) | ✅ (เฉพาะวิชาที่ลงเรียน) | ❌ | ❌ |
+| 💬 ส่งและตอบกลับความคิดเห็นในผลงาน (Two-Way) | ✅ | ✅ (เฉพาะผลงานในวิชาตน) | ✅ (เฉพาะเจ้าของผลงาน) | ❌ | ❌ |
+| 👀 อ่านความคิดเห็นและข้อเสนอแนะในผลงาน | ✅ | ✅ (เฉพาะผลงานในวิชาตน) | ✅ (เฉพาะวิชาที่ลงเรียน) | ❌ | ❌ |
 | 🔍 ตรวจสอบสุขภาพลิงก์ (Link Health Check) | ✅ | ✅ | ✅ | ❌ | ❌ |
 | ⚙️ ปรับระดับสิทธิ์ผู้ใช้ (Change Role) | ✅ (เปลี่ยนได้ทุก Role) | ✅ (ปรับเป็น Student/Guest) | ❌ | ❌ | ❌ |
 | 🚫 ระงับ / เปิดการใช้งานบัญชี (Ban/Active) | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -122,20 +128,20 @@ flowchart TD
     subgraph Client ["🖥️ Frontend (React 19 + TypeScript + Vite)"]
         UI["Web UI Components & Pages"]
         Router["React Router v7 + ProtectedRoute Guard"]
-        Service["API Services (Fetch with Auth Headers)"]
-        DateUtils["Thai Date & Lifecycle Utilities"]
-        Storage[("LocalStorage\n(Token, Role, User ID)")]
+        Service["API Services + fetchWithAuth (Auto-401 Handler)"]
+        Utils["Thai Date, Lifecycle & Form Validation Utils"]
+        Storage[("LocalStorage\n(Token, Role, User ID, Sidebar State)")]
         
         UI --> Router
         Router --> Service
         Service <--> Storage
-        UI --> DateUtils
+        UI --> Utils
     end
 
     subgraph Server ["⚙️ Backend (Node.js + Express + TypeScript)"]
         APIRouter["API Routes (/api/*)"]
         AuthMiddleware["Auth & RBAC Middlewares\n(JWT Verification & Safe Role Check)"]
-        Controllers["Controllers\n(Auth, Class, Assignment, User, Comment)"]
+        Controllers["Controllers\n(Auth/OTP, Class, Assignment, User, Comment)"]
         MulterStorage["Multer File Storage\n(/uploads - UTF-8 Encoded)"]
         LinkChecker["Link Health Checker\n(Fetch HEAD/GET with AbortController)"]
         
@@ -146,7 +152,7 @@ flowchart TD
     end
 
     subgraph Database ["🗄️ Database (MySQL Connection Pool)"]
-        Tables[("MySQL Tables\nusers, classes, class_users,\nclass_assignments, class_assignment_files,\nassignment_comments, ref_role, ref_number")]
+        Tables[("MySQL Tables\nusers, user_auth_providers, classes, class_users,\nclass_assignments, class_assignment_files,\nassignment_comments, ref_role, ref_number")]
     end
 
     Service <== "REST API / Bearer Token" ==> APIRouter
@@ -155,7 +161,8 @@ flowchart TD
 
 ### แผนผังโครงสร้างฐานข้อมูล (Database Schema Overview)
 
-- **`users`** : เก็บข้อมูลผู้ใช้งาน รหัสผู้ใช้ อีเมล รหัสผ่าน (Bcrypt Hashed) บทบาท (`role_flg`) บัญชี Social OAuth และสถานะการใช้งาน (`deleted_flg`)
+- **`users`** : เก็บข้อมูลผู้ใช้งาน รหัสผู้ใช้ อีเมล รหัสผ่าน (Bcrypt Hashed) บทบาท (`role_flg`) เวลาเข้าสู่ระบบล่าสุด (`last_login`) และสถานะการใช้งาน (`deleted_flg`)
+- **`user_auth_providers`** : จัดเก็บข้อมูลการเชื่อมต่อบัญชีภายนอก (Google OAuth / Microsoft Graph) ผูกกับ `user_id` และอีเมลของผู้ให้บริการ (`provider_email`)
 - **`ref_role`** : ตารางอ้างอิงชื่อบทบาท (`0`: ผู้ดูแลระบบ, `1`: อาจารย์, `2`: นิสิต, `3`: ผู้ใช้ทั่วไป)
 - **`classes`** : จัดเก็บข้อมูลรายวิชา รหัสวิชา ชื่อวิชา รายละเอียด ผู้สร้างวิชา และวันที่สร้าง
 - **`class_users`** : จัดเก็บความสัมพันธ์การเป็นสมาชิกในรายวิชาของแต่ละผู้ใช้ พร้อมสถานะบทบาท
@@ -194,18 +201,18 @@ flowchart TD
 PJ-Hub/
 ├── PJHub_Data.zip                   # 📦 ไฟล์สำรองฐานข้อมูลพร้อมข้อมูลเริ่มต้น (Database Backup)
 ├── README.md                        # 📖 คู่มือการติดตั้งและเอกสารอธิบายระบบฉบับสมบูรณ์
+├── ตัวอย่างเล่ม/                     # 📑 เอกสารรายงานโครงงาน (เช่น บทที่ 4 ผลการพัฒนาและทดสอบระบบ)
 │
 ├── backend/                         # ⚙️ โค้ดส่วน Backend API (Node.js + Express + TypeScript)
 │   ├── .env                         # ไฟล์ตัวแปรสภาพแวดล้อม (Database, JWT Secret, Port)
-│   ├── .env.example                 # ตัวอย่างการตั้งค่าตัวแปรสภาพแวดล้อม
 │   ├── package.json                 # Dependencies และคำสั่งรันของ Backend
 │   ├── tsconfig.json                # TypeScript Configuration
 │   ├── uploads/                     # โฟลเดอร์จัดเก็บไฟล์แนบผลงานที่อัปโหลดเข้าสู่ระบบ
 │   └── src/
 │       ├── index.ts                 # จุดเริ่มต้นของ Server และการเชื่อมต่อ Middleware/Routes
-│       ├── db.ts                    # Connection Pool และ Schema Initializer ของ MySQL
+│       ├── db.ts                    # Connection Pool ของ MySQL (UTF8mb4 & Timezone +07:00)
 │       ├── controllers/             # คอนโทรลเลอร์ควบคุม Business Logic
-│       │   ├── auth.controller.ts       # Login, Register, OAuth, Profile, Update Email
+│       │   ├── auth.controller.ts       # Login, Register, OAuth, Profile, Email, OTP Reset & Change Password
 │       │   ├── class.controller.ts      # CRUD รายวิชา, ค้นหารายวิชา, ดึงรายละเอียดวิชา
 │       │   ├── classUser.controller.ts  # จัดการสมาชิกในรายวิชา และการดึงรายชื่อ
 │       │   ├── assignment.controller.ts # ผลงาน, ไฟล์แนบ, ยอดเข้าชม, ค้นหา, ตรวจสอบลิงก์
@@ -233,12 +240,15 @@ PJ-Hub/
         ├── main.tsx                 # Entry Point ของ React Application
         ├── components/              # คอมโพเนนต์ที่ใช้ร่วมกัน
         │   └── ProtectedRoute.tsx       # คอมโพเนนต์กรองสิทธิ์ตาม Role และสถานะการล็อกอิน
+        ├── config/                  # การตั้งค่าการเชื่อมต่อส่วนกลาง
+        │   └── api.ts                   # API Base URL, Auth Headers และ fetchWithAuth (ดักจับ 401)
         ├── layouts/                 # โครงร่างหน้าจอหลัก
-        │   └── MainLayout.tsx           # Layout หลักพร้อม Sidebar, User Header, Navigation
+        │   └── MainLayout.tsx           # Layout หลักพร้อม Collapsible Sidebar, Header, Navigation
         ├── pages/                   # หน้าจอแสดงผลทั้งหมดของระบบ
         │   ├── Home.tsx                 # หน้าแรก: ค้นหาแบบรวม รายวิชา ผลงาน พร้อมแท็บกรอง
         │   ├── Login.tsx                # เข้าสู่ระบบ (รองรับ Local, Social Demo, OAuth)
-        │   ├── Register.tsx             # สมัครสมาชิกใหม่
+        │   ├── Register.tsx             # สมัครสมาชิกใหม่พร้อมตัววัดความแข็งแกร่งรหัสผ่าน
+        │   ├── ForgotPassword.tsx       # ลืมรหัสผ่าน (3-Step OTP) และเปลี่ยนรหัสผ่านโดยตรง
         │   ├── UserManagement.tsx       # จัดการผู้ใช้และสิทธิ์ (เฉพาะ Admin)
         │   ├── class/                   # หน้าจอเกี่ยวกับรายวิชา
         │   │   ├── CreateClass.tsx          # สร้างรายวิชาใหม่
@@ -248,18 +258,19 @@ PJ-Hub/
         │   │   └── TeacherClassManagement.tsx # รายวิชาที่อาจารย์รับผิดชอบ
         │   └── assignment/              # หน้าจอเกี่ยวกับผลงาน
         │       ├── CreateAssignment.tsx     # ส่งผลงานใหม่ พร้อมอัปโหลดไฟล์และตรวจลิงก์
-        │       ├── AssignmentDetail.tsx     # รายละเอียดผลงาน ไฟล์แนบ ความคิดเห็น สถิติ
+        │       ├── AssignmentDetail.tsx     # รายละเอียดผลงาน ไฟล์แนบ ความคิดเห็น และสถานะทรัพยากร
         │       ├── AssignmentManagement.tsx # หน้ารายการผลงานของตนเอง และรอบการทบทวน
         │       └── AssignmentEdit.tsx       # แก้ไขข้อมูลผลงาน จัดการไฟล์แนบ
         ├── services/                # ฟังก์ชันเชื่อมต่อ REST API ฝั่ง Backend
-        │   ├── auth.service.ts          # Authentication Services
+        │   ├── auth.service.ts          # Authentication, OAuth & Password Reset Services
         │   ├── class.service.ts         # Classroom Services
         │   ├── classUser.service.ts     # Member Enrollment Services
         │   ├── assignment.service.ts    # Assignment, Search & Link Check Services
         │   ├── comment.service.ts       # Comment Services
         │   └── user.service.ts          # User Management Services
         ├── utils/                   # ฟังก์ชันช่วยเหลือและคำนวณ
-        │   └── dateUtils.ts             # แปลงวันที่ ปี พ.ศ. ไทย และคำนวณรอบทบทวนคุณภาพ
+        │   ├── dateUtils.ts             # แปลงวันที่ ปี พ.ศ. ไทย และคำนวณรอบทบทวนคุณภาพ
+        │   └── validation.ts            # ตรวจสอบรูปแบบ Username, Email และความแข็งแกร่งรหัสผ่าน
         └── css/                     # สไตล์ชีต Vanilla CSS ทั้งหมดของระบบ
 ```
 
@@ -491,6 +502,8 @@ API ทั้งหมดจะขึ้นต้นด้วย Base URL: `http
    - ผู้ดูแลระบบ (Admin) ไม่สามารถเปลี่ยนบทบาทของตัวเอง หรือระงับบัญชีของตัวเองได้ ป้องกันอุบัติเหตุที่ทำให้ไม่มีผู้ดูแลระบบในระบบ
 8. **Safe File Uploads & UTF-8 Encoding:**
    - ใช้ Multer จัดการจัดเก็บไฟล์แนบในโฟลเดอร์แยก สุ่มชื่อไฟล์เพื่อป้องกันการบันทึกทับ (Collision) และถอดรหัสชื่อไฟล์ต้นฉบับเป็น UTF-8 เพื่อรองรับภาษาไทยอย่างสมบูรณ์
+9. **Stateless OTP Verification & Dual-Layer Input Validation:**
+   - รหัสยืนยัน OTP (6 หลัก) สำหรับกู้คืนรหัสผ่านจะถูกเข้ารหัสด้วย Bcrypt (`otpHash`) และลงนามด้วย JWT ที่มีอายุสั้น (15 นาทีสำหรับยืนยัน OTP และ 10 นาทีสำหรับตั้งรหัสผ่านใหม่) พร้อมตรวจสอบความแข็งแกร่งของรหัสผ่านและป้องกันการใช้รหัสผ่านซ้ำกับรหัสเดิมทั้งฝั่ง Frontend และ Backend
 
 ---
 
@@ -508,7 +521,7 @@ API ทั้งหมดจะขึ้นต้นด้วย Base URL: `http
 - ให้ทดลองกด `Ctrl + F5` หรือเคลียร์แคชเบราว์เซอร์ เพื่อให้ Frontend โหลดสคริปต์เวอร์ชันล่าสุดที่มีการปรับปรุงการตรวจสอบ `token` และ `currentRole` เรียบร้อยแล้ว
 
 ### 4. พอร์ต 3000 หรือ 5173 ถูกใช้งานอยู่แล้ว (Port in use)
-- Backend: สามารถเปลี่ยนพอร์ตได้ในไฟล์ `backend/.env` ที่ตัวแปร `PORT` (และอัปเดต URL ในไฟล์ frontend service ให้ตรงกัน)
+- Backend: สามารถเปลี่ยนพอร์ตได้ในไฟล์ `backend/.env` ที่ตัวแปร `PORT` (และตั้งค่า `VITE_API_URL` ในฝั่ง Frontend หรือใน `frontend/src/config/api.ts` ให้ตรงกัน)
 - Frontend: Vite จะทำการสลับพอร์ตถัดไปให้โดยอัตโนมัติ (เช่น 5174)
 
 ---
